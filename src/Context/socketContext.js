@@ -10,6 +10,7 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [selectedServer, setSelectedServer] = useState("");
+  const [commandMode, setCommandMode] = useState("manual"); // Added commandMode state
 
   const connect = (serverUrl) => {
     if (socket) {
@@ -63,7 +64,7 @@ export const SocketProvider = ({ children }) => {
     };
   }, [socket]);
 
-  // Provide socket, isConnected, connect, disconnect, selectedServer via context
+  // Provide socket, isConnected, connect, disconnect, selectedServer, commandMode via context
   return (
     <SocketContext.Provider
       value={{
@@ -73,6 +74,8 @@ export const SocketProvider = ({ children }) => {
         disconnect,
         selectedServer,
         setSelectedServer,
+        commandMode,
+        setCommandMode, // Added setCommandMode to context
       }}
     >
       {children}

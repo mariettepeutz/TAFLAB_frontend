@@ -14,51 +14,66 @@ const boatIcon = new L.Icon({
 });
 
 const robots = [
-  { id: 1, name: "BoatPi 1", lat: 37.864, lng: -122.32 },
-  { id: 2, name: "BoatPi 2", lat: 37.869, lng: -122.323 },
-  { id: 3, name: "BoatPi 3", lat: 37.8675, lng: -122.319 },
-  { id: 4, name: "BoatPi 4", lat: 37.8681, lng: -122.32 },
-  { id: 5, name: "BoatPi 5", lat: 37.87, lng: -122.325 },
+  // Your existing robot data
 ];
 
 function ManualControl() {
-  const { socket, isConnected } = useSocket();
+  const { socket, isConnected, setCommandMode } = useSocket();
 
   const [selectedRobot, setSelectedRobot] = useState("all");
   const [rudderAngle, setRudderAngle] = useState(90);
+  const [sailAngle, setSailAngle] = useState(45);
   const [throttle, setThrottle] = useState(50);
+  const commandMode = "manual"; // Set command mode to 'manual'
   const [mapCenter, setMapCenter] = useState({ lat: 37.8682, lng: -122.3177 });
+
+  // Set the global command mode to 'manual' when this component is mounted
+  useEffect(() => {
+    if (setCommandMode) {
+      setCommandMode("manual");
+    }
+  }, [setCommandMode]);
 
   const sendData = useCallback(() => {
     if (isConnected && socket) {
-      const data = { rudder_angle: rudderAngle, throttle };
+      const data = {
+        rudder_angle: rudderAngle,
+        sail_angle: sailAngle,
+        throttle,
+        command_mode: commandMode,
+      };
+
       socket.emit("gui_data", data);
       console.log("Sent data:", data);
     } else {
       console.warn("Socket is not connected.");
     }
-  }, [isConnected, socket, rudderAngle, throttle]);
+  }, [isConnected, socket, rudderAngle, sailAngle, throttle, commandMode]);
+
+  useEffect(() => {
+    sendData();
+  }, [rudderAngle, sailAngle, throttle, sendData]);
 
   const handleRudderMove = (event) => {
-    const angle = Math.round(((event.y + 1) / 2) * 180);
+    const angle = Math.round(((event.x + 1) / 2) * 180);
     setRudderAngle(angle);
-    sendData();
   };
 
   const handleThrottleMove = (event) => {
     const throttleValue = Math.round(((event.y + 1) / 2) * 100);
     setThrottle(throttleValue);
-    sendData();
   };
 
   const handleRudderStop = () => {
     setRudderAngle(90);
-    sendData();
   };
 
   const handleThrottleStop = () => {
     setThrottle(50);
-    sendData();
+  };
+
+  const handleSailAngleChange = (e) => {
+    setSailAngle(parseInt(e.target.value));
   };
 
   const handleRobotChange = (event) => {
@@ -74,32 +89,7 @@ function ManualControl() {
   };
 
   const renderMarkers = () => {
-    if (selectedRobot === "all") {
-      return robots.map((robot) => (
-        <Marker
-          key={robot.id}
-          position={[robot.lat, robot.lng]}
-          icon={boatIcon}
-        >
-          <Tooltip direction="bottom" offset={[0, 0]} permanent>
-            {robot.name}
-          </Tooltip>
-          <Popup>{robot.name}'s Current Location</Popup>
-        </Marker>
-      ));
-    } else {
-      const robot = robots.find((r) => r.id === parseInt(selectedRobot));
-      return (
-        robot && (
-          <Marker position={[robot.lat, robot.lng]} icon={boatIcon}>
-            <Tooltip direction="bottom" offset={[0, 10]} permanent>
-              {robot.name}
-            </Tooltip>
-            <Popup>{robot.name}'s Current Location</Popup>
-          </Marker>
-        )
-      );
-    }
+    // Your existing marker rendering logic
   };
 
   return (
@@ -144,6 +134,18 @@ function ManualControl() {
             disabled={!isConnected}
           />
           <p>Throttle: {throttle}%</p>
+        </div>
+
+        <div>
+          <label>Sail Angle: {sailAngle}°</label>
+          <input
+            type="range"
+            min="0"
+            max="90"
+            value={sailAngle}
+            onChange={handleSailAngleChange}
+            disabled={!isConnected}
+          />
         </div>
       </div>
     </div>

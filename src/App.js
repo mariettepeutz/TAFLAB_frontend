@@ -3,8 +3,9 @@ import React, { useState, useEffect } from "react";
 import ManualControl from "./Window/manualControl";
 import AutonomousControl from "./Window/autonomousControl";
 import DataTransfer from "./Window/dataTransfer";
-import { SocketProvider, useSocket } from "./Context/socketContext";
+import { SocketProvider } from "./Context/socketContext";
 import Header from "./Window/header"; // Import the Header component
+import Sidebar from "./Window/sideBar"; // Import the Sidebar component
 import "./styles.css";
 
 function App() {
@@ -13,7 +14,8 @@ function App() {
   const [servers, setServers] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const { socket, isConnected, connect, disconnect } = useSocket();
+  // Removed socket-related imports and usage from App component
+  // as they should be handled within the SocketProvider or individual components
 
   useEffect(() => {
     fetch("/Initialization/servers.json")
@@ -24,19 +26,6 @@ function App() {
       })
       .catch((error) => console.error("Error fetching server list:", error));
   }, []);
-
-  const handleConnection = () => {
-    if (isConnected) {
-      disconnect();
-    } else {
-      connect(selectedServer);
-    }
-  };
-
-  const handleServerChange = (event) => {
-    setSelectedServer(event.target.value);
-    disconnect();
-  };
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -54,46 +43,43 @@ function App() {
   };
 
   return (
-    <div className="app-container">
-      <Header
-        selectedServer={selectedServer}
-        servers={servers}
-        handleServerChange={handleServerChange}
-        handleConnection={handleConnection}
-        isConnected={isConnected}
-        toggleSidebar={toggleSidebar}
-      />
-      <div className="main-content">
-        <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-          <h2>Boats</h2>
-          <button>Action 1</button>
-          <button>Action 2</button>
-        </aside>
-        <main className="control-panel">
-          <nav className="tabs">
-            <button
-              className={activeTab === "manual" ? "active" : ""}
-              onClick={() => setActiveTab("manual")}
-            >
-              Manual Control
-            </button>
-            <button
-              className={activeTab === "autonomous" ? "active" : ""}
-              onClick={() => setActiveTab("autonomous")}
-            >
-              Autonomous Control
-            </button>
-            <button
-              className={activeTab === "data" ? "active" : ""}
-              onClick={() => setActiveTab("data")}
-            >
-              Data Transfer
-            </button>
-          </nav>
-          <section className="tab-content">{renderTab()}</section>
-        </main>
+    <SocketProvider>
+      <div className="app-container">
+        <Header
+          selectedServer={selectedServer}
+          servers={servers}
+          setSelectedServer={setSelectedServer}
+          isSidebarOpen={isSidebarOpen}
+          toggleSidebar={toggleSidebar}
+        />
+        <div className="main-content">
+          <Sidebar isSidebarOpen={isSidebarOpen} />
+          <main className="control-panel">
+            <nav className="tabs">
+              <button
+                className={activeTab === "manual" ? "active" : ""}
+                onClick={() => setActiveTab("manual")}
+              >
+                Manual Control
+              </button>
+              <button
+                className={activeTab === "autonomous" ? "active" : ""}
+                onClick={() => setActiveTab("autonomous")}
+              >
+                Autonomous Control
+              </button>
+              <button
+                className={activeTab === "data" ? "active" : ""}
+                onClick={() => setActiveTab("data")}
+              >
+                Data Transfer
+              </button>
+            </nav>
+            <section className="tab-content">{renderTab()}</section>
+          </main>
+        </div>
       </div>
-    </div>
+    </SocketProvider>
   );
 }
 

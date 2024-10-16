@@ -1,10 +1,16 @@
-// Window/autonomousControl.js
 import React, { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMapEvents,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useSocket } from "../Context/socketContext";
 
+// Custom boat icon
 const boatIcon = new L.Icon({
   iconUrl: "boat.png",
   iconSize: [32, 32],
@@ -12,11 +18,27 @@ const boatIcon = new L.Icon({
   popupAnchor: [0, -32],
 });
 
+// Custom icon for the selected position
+const selectedIcon = new L.Icon({
+  iconUrl: "target-location.png", // Replace with your target icon image file
+  iconSize: [32, 32], // Adjust the size if needed
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
+});
+
 function AutonomousControl() {
-  const { socket, isConnected } = useSocket(); // Access socket and connection status
+  const { socket, isConnected, setCommandMode } = useSocket();
   const [boats, setBoats] = useState([]);
   const [targetBoatId, setTargetBoatId] = useState("");
   const [boat, setBoat] = useState(null);
+  const [selectedPosition, setSelectedPosition] = useState(null);
+
+  // Set command mode to 'autonomous'
+  useEffect(() => {
+    if (setCommandMode) {
+      setCommandMode("autonomous");
+    }
+  }, [setCommandMode]);
 
   // Listen for `boat_locations` event from the backend
   useEffect(() => {
@@ -55,6 +77,31 @@ function AutonomousControl() {
     setTargetBoatId(event.target.value);
   };
 
+  const handleMapClick = (e) => {
+    setSelectedPosition(e.latlng);
+  };
+
+  const sendTargetCoordinates = () => {
+    if (socket && isConnected && selectedPosition) {
+      const data = {
+        command_mode: "autonomous",
+        target_gps_latitude: selectedPosition.lat,
+        target_gps_longitude: selectedPosition.lng,
+      };
+      socket.emit("gui_data", data);
+      console.log("Sent target coordinates:", data);
+    } else {
+      console.warn("Socket is not connected or position not selected.");
+    }
+  };
+
+  function ClickableMap() {
+    useMapEvents({
+      click: handleMapClick,
+    });
+    return null;
+  }
+
   return (
     <div className="map-container">
       <h2>Autonomous Control</h2>
@@ -85,6 +132,7 @@ function AutonomousControl() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="&copy; OpenStreetMap contributors"
         />
+        <ClickableMap />
         {boat && (
           <Marker
             position={[boat.location.latitude, boat.location.longitude]}
@@ -99,7 +147,38 @@ function AutonomousControl() {
             </Popup>
           </Marker>
         )}
+        {selectedPosition && (
+          <Marker position={selectedPosition} icon={selectedIcon}>
+            <Popup>
+              Selected Target
+              <br />
+              Latitude: {selectedPosition.lat.toFixed(5)}
+              <br />
+              Longitude: {selectedPosition.lng.toFixed(5)}
+            </Popup>
+          </Marker>
+        )}
       </MapContainer>
+
+      <div style={{ marginTop: "10px" }}>
+        {selectedPosition && (
+          <div>
+            <p>
+              Selected Position:
+              <br />
+              Latitude: {selectedPosition.lat.toFixed(5)}
+              <br />
+              Longitude: {selectedPosition.lng.toFixed(5)}
+            </p>
+            <button onClick={sendTargetCoordinates} disabled={!isConnected}>
+              Send Target Coordinates
+            </button>
+          </div>
+        )}
+        {!selectedPosition && (
+          <p>Click on the map to select a target position.</p>
+        )}
+      </div>
     </div>
   );
 }
