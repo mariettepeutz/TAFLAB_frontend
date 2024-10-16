@@ -1,0 +1,14 @@
+[
+  {
+    "label": "0.0.0.0",
+    "value": "http://0.0.0.0:3336"
+  },
+  {
+    "label": "192.168.68.56",
+    "value": "http://192.168.68.56:3336"
+  },
+  {
+    "label": "Remote Server 2",
+    "value": "http://remote-server2.com:3336"
+  }
+]
