@@ -9,7 +9,7 @@ import Sidebar from "./Window/sideBar";
 import "./styles.css";
 
 function App() {
-  const [activeTab, setActiveTab] = useState("manual");
+  const [activeTab, setActiveTab] = useState("heatmap");
   const [selectedServer, setSelectedServer] = useState("");
   const [servers, setServers] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
