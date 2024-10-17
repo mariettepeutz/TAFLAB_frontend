@@ -1,0 +1,39 @@
+/* Media Query for Mobile Devices */
+@media (max-width: 768px) {
+  .hamburger {
+    display: block; /* Show hamburger on mobile */
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: 1000;
+    transform: translateX(-100%); /* Hidden by default */
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .sidebar.open {
+    transform: translateX(0); /* Slide in when open */
+  }
+
+  .main-content {
+    flex: 1;
+    /* Remove any margin or padding that might offset the content */
+  }
+
+  .control-panel {
+    width: 100%;
+    padding: 15px;
+  }
+
+  .controls-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controls-section > div {
+    max-width: none;
+  }
+}
