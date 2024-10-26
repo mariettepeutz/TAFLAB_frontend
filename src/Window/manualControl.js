@@ -1,3 +1,5 @@
+// Window/manualControl.js
+
 import React, { useState, useEffect, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Tooltip } from "react-leaflet";
 import { Joystick } from "react-joystick-component";
@@ -5,6 +7,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "../styles.css";
 import { useSocket } from "../Context/socketContext";
+import { BoatContext } from "../Context/boatContext"; // Import BoatContext
 
 const boatIcon = new L.Icon({
   iconUrl: "boat.png",
@@ -13,14 +16,11 @@ const boatIcon = new L.Icon({
   popupAnchor: [0, -32],
 });
 
-const robots = [
-  // Your existing robot data
-];
-
 function ManualControl() {
   const { socket, isConnected, setCommandMode } = useSocket();
+  const { boats } = React.useContext(BoatContext); // Get boats from context
 
-  const [selectedRobot, setSelectedRobot] = useState("all");
+  const [selectedBoatId, setSelectedBoatId] = useState("all");
   const [rudderAngle, setRudderAngle] = useState(90);
   const [sailAngle, setSailAngle] = useState(45);
   const [throttle, setThrottle] = useState(50);
@@ -37,6 +37,7 @@ function ManualControl() {
   const sendData = useCallback(() => {
     if (isConnected && socket) {
       const data = {
+        boat_name: selectedBoatId,
         rudder_angle: rudderAngle,
         sail_angle: sailAngle,
         throttle,
@@ -48,7 +49,15 @@ function ManualControl() {
     } else {
       console.warn("Socket is not connected.");
     }
-  }, [isConnected, socket, rudderAngle, sailAngle, throttle, commandMode]);
+  }, [
+    isConnected,
+    socket,
+    rudderAngle,
+    sailAngle,
+    throttle,
+    commandMode,
+    selectedBoatId,
+  ]);
 
   useEffect(() => {
     sendData();
@@ -76,20 +85,46 @@ function ManualControl() {
     setSailAngle(parseInt(e.target.value));
   };
 
-  const handleRobotChange = (event) => {
+  const handleBoatChange = (event) => {
     const selectedValue = event.target.value;
-    setSelectedRobot(selectedValue);
+    setSelectedBoatId(selectedValue);
 
-    const robot = robots.find((r) => r.id === parseInt(selectedValue));
+    const boat = boats.find((b) => b.boat_id === selectedValue);
     setMapCenter(
-      robot
-        ? { lat: robot.lat, lng: robot.lng }
+      boat
+        ? { lat: boat.location.latitude, lng: boat.location.longitude }
         : { lat: 37.8682, lng: -122.3177 }
     );
   };
 
   const renderMarkers = () => {
-    // Your existing marker rendering logic
+    return boats.map((boat) => {
+      const location = boat.location;
+      if (
+        location &&
+        typeof location.latitude === "number" &&
+        typeof location.longitude === "number"
+      ) {
+        return (
+          <Marker
+            key={boat.boat_id}
+            position={[location.latitude, location.longitude]}
+            icon={boatIcon}
+          >
+            <Popup>
+              <b>{boat.boat_id}</b>
+              <br />
+              Latitude: {location.latitude.toFixed(5)}
+              <br />
+              Longitude: {location.longitude.toFixed(5)}
+            </Popup>
+          </Marker>
+        );
+      } else {
+        console.warn(`Boat ${boat.boat_id} has no valid location data.`);
+        return null; // Don't render a marker if location is invalid
+      }
+    });
   };
 
   return (
@@ -98,13 +133,13 @@ function ManualControl() {
 
       {!isConnected && <p className="warning-text">Not connected to server.</p>}
 
-      <div className="robot-selection">
-        <label>Select Robot: </label>
-        <select value={selectedRobot} onChange={handleRobotChange}>
+      <div className="boat-selection">
+        <label>Select Boat: </label>
+        <select value={selectedBoatId} onChange={handleBoatChange}>
           <option value="all">All Boats</option>
-          {robots.map((robot) => (
-            <option key={robot.id} value={robot.id}>
-              {robot.name}
+          {boats.map((boat) => (
+            <option key={boat.boat_id} value={boat.boat_id}>
+              {boat.boat_id}
             </option>
           ))}
         </select>

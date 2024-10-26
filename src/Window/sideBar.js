@@ -1,9 +1,13 @@
+// Window/sideBar.js
+
 import React from "react";
-import { useSocket } from "../Context/socketContext"; // Import the useSocket hook
-import "../styles.css"; // Import the styles if necessary
+import { useSocket } from "../Context/socketContext";
+import { BoatContext } from "../Context/boatContext"; // Import BoatContext
+import "../styles.css";
 
 function Sidebar({ isSidebarOpen }) {
-  const { commandMode } = useSocket(); // Get commandMode from context
+  const { commandMode } = useSocket();
+  const { boats } = React.useContext(BoatContext); // Get boats from context
 
   return (
     <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
@@ -19,8 +23,16 @@ function Sidebar({ isSidebarOpen }) {
           {commandMode.charAt(0).toUpperCase() + commandMode.slice(1)}
         </span>
       </p>
-      <button>Action 1</button>
-      <button>Action 2</button>
+      <h3>Online Boats:</h3>
+      {boats.length > 0 ? (
+        <ul>
+          {boats.map((boat) => (
+            <li key={boat.boat_id}>{boat.boat_id}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>No boats online.</p>
+      )}
     </aside>
   );
 }
