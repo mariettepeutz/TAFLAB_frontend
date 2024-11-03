@@ -1,44 +1,57 @@
 // src/Window/HeatmapWindow.js
 
-import React, { useEffect, useState, useRef } from "react";
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import React, { useEffect, useState, useRef, useContext } from "react";
+import { MapContainer, TileLayer, useMap, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "leaflet.heat";
+import { BoatContext } from "../Context/boatContext"; // Import BoatContext
 
 const HeatmapWindow = () => {
-  const [boatsData, setBoatsData] = useState([]);
-  const [chaosData, setChaosData] = useState([]);
+  const { boats } = useContext(BoatContext); // Get boats data from context
+  const [heatmapData, setHeatmapData] = useState([]);
+  const [dataType, setDataType] = useState("temperature"); // 'chaos' or 'temperature'
 
-  const legendRef = useRef(null); // Reference to the legend element
-  const [legendPosition, setLegendPosition] = useState({ x: null, y: null }); // Position of the legend
+  const legendRef = useRef(null);
+  const [legendPosition, setLegendPosition] = useState({ x: null, y: null });
 
-  // For dragging
+  // For dragging the legend
   const isDragging = useRef(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
   const legendStartPos = useRef({ x: 0, y: 0 });
 
-  useEffect(() => {
-    // Fetch the boat data from boats.json
-    fetch("/boats.json")
-      .then((response) => response.json())
-      .then((data) => {
-        setBoatsData(data);
+  // Custom boat icon
+  const boatIcon = new L.Icon({
+    iconUrl: "boat.png",
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+  });
 
-        // Convert data to chaos data format for heatmap using the chaos property
-        const chaos = data.map(({ lat, lng, chaos }) => [lat, lng, chaos]); // Use chaos for intensity
-        setChaosData(chaos);
-      })
-      .catch((error) => console.error("Error fetching boat data:", error));
-  }, []);
+  useEffect(() => {
+    if (boats.length > 0) {
+      // Calculate data for heatmap based on selected dataType
+      const data = boats.map((boat) => {
+        const { lat, lng } = boat;
+        let value = 0;
+        if (dataType === "chaos") {
+          value = boat.chaos;
+        } else if (dataType === "temperature") {
+          value = boat.temperature;
+        }
+        return [lat, lng, value]; // Use the selected data value
+      });
+      setHeatmapData(data);
+    }
+  }, [boats, dataType]);
 
   // Heatmap Layer Component
   const HeatmapLayer = () => {
     const map = useMap();
 
     useEffect(() => {
-      if (chaosData.length > 0) {
-        const heatLayer = L.heatLayer(chaosData, {
+      if (heatmapData.length > 0) {
+        const heatLayer = L.heatLayer(heatmapData, {
           radius: 40,
           blur: 50,
           maxZoom: 5,
@@ -49,7 +62,7 @@ const HeatmapWindow = () => {
           map.removeLayer(heatLayer);
         };
       }
-    }, [map, chaosData]);
+    }, [map, heatmapData]);
 
     return null;
   };
@@ -59,15 +72,15 @@ const HeatmapWindow = () => {
     const map = useMap();
 
     useEffect(() => {
-      if (boatsData.length > 0) {
+      if (boats.length > 0) {
         const windMarkers = [];
 
         // Define a set of interpolation points (grid)
-        const gridSize = 0.002; // Adjust grid size for desired density
-        const latMin = Math.min(...boatsData.map((b) => b.lat));
-        const latMax = Math.max(...boatsData.map((b) => b.lat));
-        const lngMin = Math.min(...boatsData.map((b) => b.lng));
-        const lngMax = Math.max(...boatsData.map((b) => b.lng));
+        const gridSize = 0.005; // Adjust grid size for desired density
+        const latMin = Math.min(...boats.map((b) => b.lat));
+        const latMax = Math.max(...boats.map((b) => b.lat));
+        const lngMin = Math.min(...boats.map((b) => b.lng));
+        const lngMax = Math.max(...boats.map((b) => b.lng));
 
         const interpolationPoints = [];
 
@@ -83,26 +96,30 @@ const HeatmapWindow = () => {
           let sumV = 0;
           let weightSum = 0;
 
-          boatsData.forEach((boat) => {
+          boats.forEach((boat) => {
             const distance = Math.sqrt(
               (boat.lat - point.lat) ** 2 + (boat.lng - point.lng) ** 2
             );
             const weight = 1 / (distance + 0.0001); // Avoid division by zero
 
-            sumU += boat.u * weight;
-            sumV += boat.v * weight;
+            const u = boat["u-wind"]; // u-wind component
+            const v = boat["v-wind"]; // v-wind component
+
+            sumU += u * weight;
+            sumV += v * weight;
             weightSum += weight;
           });
 
           const avgU = sumU / weightSum;
           const avgV = sumV / weightSum;
 
-          const magnitude = Math.sqrt(avgU * avgU + avgV * avgV);
+          const magnitude = Math.sqrt(avgU ** 2 + avgV ** 2);
           const angle = (Math.atan2(avgV, avgU) * 180) / Math.PI;
 
+          // Scale the arrow size for better visibility
           const arrowIcon = L.divIcon({
             html: `<div style="transform: rotate(${angle}deg); font-size: ${
-              6 + magnitude * 15
+              6 + magnitude * 3
             }px; color: green;">&#8593;</div>`,
             className: "",
           });
@@ -118,12 +135,46 @@ const HeatmapWindow = () => {
           windMarkers.forEach((marker) => map.removeLayer(marker));
         };
       }
-    }, [map, boatsData]);
+    }, [map, boats]);
 
     return null;
   };
 
-  // Fix leaflet's icon issue with webpack
+  // Boat Markers Component
+  const BoatMarkers = () => {
+    return (
+      <>
+        {boats.map((boat) => {
+          if (
+            boat &&
+            typeof boat.lat === "number" &&
+            typeof boat.lng === "number"
+          ) {
+            return (
+              <Marker
+                key={boat.boat_id}
+                position={[boat.lat, boat.lng]}
+                icon={boatIcon}
+              >
+                <Popup>
+                  <b>{boat.boat_id}</b>
+                  <br />
+                  Latitude: {boat.lat.toFixed(6)}
+                  <br />
+                  Longitude: {boat.lng.toFixed(6)}
+                </Popup>
+              </Marker>
+            );
+          } else {
+            console.warn(`Boat ${boat.boat_id} has no valid location data.`);
+            return null; // Don't render a marker if location is invalid
+          }
+        })}
+      </>
+    );
+  };
+
+  // Fix Leaflet's icon issue with Webpack
   delete L.Icon.Default.prototype._getIconUrl;
 
   L.Icon.Default.mergeOptions({
@@ -221,13 +272,17 @@ const HeatmapWindow = () => {
         }}
         onMouseDown={handleMouseDown}
       >
-        <strong>Chaos Intensity</strong>
+        <strong>
+          {dataType === "chaos" ? "Chaos Intensity" : "Temperature"}
+        </strong>
         <div
           style={{
             width: "200px",
             height: "20px",
             background:
-              "linear-gradient(to right, blue, cyan, green, yellow, orange, red)", // Horizontal gradient
+              dataType === "chaos"
+                ? "linear-gradient(to right, blue, cyan, green, yellow, orange, red)"
+                : "linear-gradient(to right, blue, green, yellow, orange, red)",
             border: "1px solid black",
             marginTop: "10px",
           }}
@@ -247,10 +302,21 @@ const HeatmapWindow = () => {
     );
   };
 
+  const handleDataTypeChange = (event) => {
+    setDataType(event.target.value);
+  };
+
   return (
     <div>
+      <div style={{ marginBottom: "10px" }}>
+        <label>Select Data Type: </label>
+        <select value={dataType} onChange={handleDataTypeChange}>
+          <option value="chaos">Chaos Intensity</option>
+          <option value="temperature">Temperature</option>
+        </select>
+      </div>
       <MapContainer
-        center={[37.8682, -122.3177]} // Center the map around Berkeley, CA
+        center={[37.866942, -122.315452]} // Center the map around the base coordinates
         zoom={14} // Adjust zoom level for closer view
         style={{ height: "600px", width: "100%" }}
       >
@@ -260,6 +326,7 @@ const HeatmapWindow = () => {
         />
         <HeatmapLayer />
         <WindLayer />
+        <BoatMarkers /> {/* Add boat markers to the map */}
       </MapContainer>
       <ColorScaleLegend /> {/* Add the draggable color scale legend here */}
     </div>

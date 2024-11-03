@@ -1,43 +1,16 @@
-import React, { useState, useEffect } from "react";
+// App.js
+import React, { useState } from "react";
 import ManualControl from "./Window/manualControl";
 import AutonomousControl from "./Window/autonomousControl";
 import DataTransfer from "./Window/dataTransfer";
 import Heatmap from "./Window/heatmap"; // Import Heatmap
-import { useSocket } from "./Context/socketContext";
 import Header from "./Window/header";
 import Sidebar from "./Window/sideBar";
 import "./styles.css";
 
 function App() {
-  const [activeTab, setActiveTab] = useState("manual");
-  const [selectedServer, setSelectedServer] = useState("");
-  const [servers, setServers] = useState([]);
+  const [activeTab, setActiveTab] = useState("autonomous");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const { socket, isConnected, connect, disconnect } = useSocket();
-
-  useEffect(() => {
-    fetch("/Initialization/servers.json")
-      .then((response) => response.json())
-      .then((data) => {
-        setServers(data);
-        setSelectedServer(data[0]?.value || "");
-      })
-      .catch((error) => console.error("Error fetching server list:", error));
-  }, []);
-
-  const handleConnection = () => {
-    if (isConnected) {
-      disconnect();
-    } else {
-      connect(selectedServer);
-    }
-  };
-
-  const handleServerChange = (event) => {
-    setSelectedServer(event.target.value);
-    disconnect();
-  };
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -58,14 +31,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <Header
-        selectedServer={selectedServer}
-        servers={servers}
-        handleServerChange={handleServerChange}
-        handleConnection={handleConnection}
-        isConnected={isConnected}
-        toggleSidebar={toggleSidebar}
-      />
+      <Header toggleSidebar={toggleSidebar} />
       <div className="main-content">
         <Sidebar isSidebarOpen={isSidebarOpen} />
         <main className="control-panel">

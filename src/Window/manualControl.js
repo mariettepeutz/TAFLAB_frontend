@@ -1,6 +1,6 @@
 // Window/manualControl.js
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useContext } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Tooltip } from "react-leaflet";
 import { Joystick } from "react-joystick-component";
 import L from "leaflet";
@@ -18,14 +18,17 @@ const boatIcon = new L.Icon({
 
 function ManualControl() {
   const { socket, isConnected, setCommandMode } = useSocket();
-  const { boats } = React.useContext(BoatContext); // Get boats from context
+  const { boats } = useContext(BoatContext); // Use useContext to get boats
 
   const [selectedBoatId, setSelectedBoatId] = useState("all");
   const [rudderAngle, setRudderAngle] = useState(90);
   const [sailAngle, setSailAngle] = useState(45);
-  const [throttle, setThrottle] = useState(50);
+  const [throttle, setThrottle] = useState(0);
   const commandMode = "manual"; // Set command mode to 'manual'
-  const [mapCenter, setMapCenter] = useState({ lat: 37.8682, lng: -122.3177 });
+  const [mapCenter, setMapCenter] = useState({
+    lat: 37.86706,
+    lng: -122.36341,
+  });
 
   // Set the global command mode to 'manual' when this component is mounted
   useEffect(() => {
@@ -69,7 +72,7 @@ function ManualControl() {
   };
 
   const handleThrottleMove = (event) => {
-    const throttleValue = Math.round(((event.y + 1) / 2) * 100);
+    const throttleValue = Math.round((event.y + 1) * 100 - 100);
     setThrottle(throttleValue);
   };
 
@@ -92,31 +95,30 @@ function ManualControl() {
     const boat = boats.find((b) => b.boat_id === selectedValue);
     setMapCenter(
       boat
-        ? { lat: boat.location.latitude, lng: boat.location.longitude }
+        ? { lat: boat.lat, lng: boat.lng } // Update to use boat.lat and boat.lng
         : { lat: 37.8682, lng: -122.3177 }
     );
   };
 
   const renderMarkers = () => {
     return boats.map((boat) => {
-      const location = boat.location;
       if (
-        location &&
-        typeof location.latitude === "number" &&
-        typeof location.longitude === "number"
+        boat &&
+        typeof boat.lat === "number" &&
+        typeof boat.lng === "number"
       ) {
         return (
           <Marker
             key={boat.boat_id}
-            position={[location.latitude, location.longitude]}
+            position={[boat.lat, boat.lng]} // Use boat.lat and boat.lng
             icon={boatIcon}
           >
             <Popup>
               <b>{boat.boat_id}</b>
               <br />
-              Latitude: {location.latitude.toFixed(5)}
+              Latitude: {boat.lat.toFixed(6)}
               <br />
-              Longitude: {location.longitude.toFixed(5)}
+              Longitude: {boat.lng.toFixed(6)}
             </Popup>
           </Marker>
         );

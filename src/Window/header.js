@@ -1,16 +1,30 @@
 // Header.js
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useSocket } from "../Context/socketContext";
 import "../styles.css"; // Import styles if needed
 
-function Header({
-  selectedServer,
-  servers,
-  setSelectedServer,
-  isSidebarOpen,
-  toggleSidebar,
-}) {
-  const { isConnected, connect, disconnect } = useSocket();
+function Header({ toggleSidebar }) {
+  const {
+    selectedServer,
+    setSelectedServer,
+    isConnected,
+    connect,
+    disconnect,
+  } = useSocket();
+
+  const [servers, setServers] = useState([]);
+
+  useEffect(() => {
+    fetch("/Initialization/servers.json")
+      .then((response) => response.json())
+      .then((data) => {
+        setServers(data);
+        if (!selectedServer && data.length > 0) {
+          setSelectedServer(data[0].value);
+        }
+      })
+      .catch((error) => console.error("Error fetching server list:", error));
+  }, [selectedServer, setSelectedServer]);
 
   const handleConnection = () => {
     if (isConnected) {

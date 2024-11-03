@@ -31,6 +31,12 @@ export const BoatProvider = ({ children }) => {
     }
   }, [socket, isConnected]);
 
+  useEffect(() => {
+    if (!isConnected) {
+      setBoats([]); // Clear boats when disconnected
+    }
+  }, [isConnected]);
+
   return (
     <BoatContext.Provider value={{ boats }}>{children}</BoatContext.Provider>
   );

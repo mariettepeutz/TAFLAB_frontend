@@ -15,19 +15,33 @@ function Sidebar({ isSidebarOpen }) {
       <p>
         Current Command Mode:{" "}
         <span
-          style={{
-            color: commandMode === "manual" ? "green" : "white",
-            fontWeight: "bold",
-          }}
+          className={`command-mode ${
+            commandMode === "manual" ? "manual" : "autonomous"
+          }`}
         >
           {commandMode.charAt(0).toUpperCase() + commandMode.slice(1)}
         </span>
       </p>
       <h3>Online Boats:</h3>
       {boats.length > 0 ? (
-        <ul>
+        <ul className="boat-list">
           {boats.map((boat) => (
-            <li key={boat.boat_id}>{boat.boat_id}</li>
+            <li key={boat.boat_id}>
+              <strong>{boat.boat_id}</strong>
+              <br />
+              Status:{" "}
+              <span
+                className={`boat-status ${
+                  boat.status === "Reached Destination"
+                    ? "reached"
+                    : boat.status.startsWith("In Progress")
+                    ? "in-progress"
+                    : "idle"
+                }`}
+              >
+                {boat.status || "Idle"}
+              </span>
+            </li>
           ))}
         </ul>
       ) : (
