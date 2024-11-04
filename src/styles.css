@@ -263,3 +263,149 @@ body {
   flex-direction: column;
   align-items: center;
 }
+/* Controls Section */
+.map-container {
+  position: relative;
+}
+
+.notification-popup {
+  position: absolute;
+  top: -50px; /* Adjust as needed */
+  left: 60%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.5); /* Half-transparent */
+  color: #fff;
+  padding: 10px;
+  border-radius: 5px;
+  z-index: 1000;
+}
+
+/* Boat Cards Container */
+.boat-cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+/* Boat Card Styling */
+.boat-card {
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  width: 250px;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.boat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.boat-card-header {
+  background-color: #007bff;
+  color: #ffffff;
+  padding: 15px;
+}
+
+.boat-card-header h3 {
+  margin: 0;
+  font-size: 1.25em;
+}
+
+.boat-card-body {
+  padding: 15px;
+}
+
+.boat-card-body p {
+  margin: 0 0 10px 0;
+}
+
+/* Modal Styling */
+.boat-modal-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.boat-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  max-height: 80vh;
+  margin-right: -50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 30px;
+  max-width: 600px;
+  width: 90%;
+  border-radius: 10px;
+  overflow-y: auto;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.modal-close-button {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.modal-close-button:hover {
+  color: #000;
+}
+
+.boat-details {
+  margin-top: 20px;
+}
+
+.boat-details p {
+  margin-bottom: 10px;
+}
+
+.boat-details p strong {
+  display: inline-block;
+  width: 150px;
+}
+
+/* Button Group Styling */
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.send-to-cloud-button,
+.get-from-cloud-button {
+  flex: 1;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+.get-from-cloud-button {
+  background-color: #28a745;
+}
+
+.send-to-cloud-button:hover {
+  background-color: #0056b3;
+}
+
+.get-from-cloud-button:hover {
+  background-color: #218838;
+}
+
+/* Remove margin from the last button */
+.button-group button:last-child {
+  margin-right: 0;
+}
