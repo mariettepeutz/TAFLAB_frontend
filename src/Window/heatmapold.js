@@ -52,8 +52,8 @@ const HeatmapWindow = () => {
     useEffect(() => {
       if (heatmapData.length > 0) {
         const heatLayer = L.heatLayer(heatmapData, {
-          radius: 50,
-          blur: 50,
+          radius: 100,
+          blur: 30,
           maxZoom: 10,
         }).addTo(map);
 

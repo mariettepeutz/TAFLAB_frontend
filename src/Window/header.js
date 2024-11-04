@@ -42,7 +42,7 @@ function Header({ toggleSidebar }) {
   return (
     <header className="header">
       <div className="logo">
-        <h1>Boat Control System</h1>
+        <h1>TAFLAB</h1>
       </div>
       <div className="connection-info">
         <div className="server-selection">

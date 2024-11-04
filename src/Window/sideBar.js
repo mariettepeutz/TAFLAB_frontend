@@ -36,10 +36,10 @@ function Sidebar({ isSidebarOpen }) {
                     ? "reached"
                     : boat.status.startsWith("In Progress")
                     ? "in-progress"
-                    : "idle"
+                    : "station keeping"
                 }`}
               >
-                {boat.status || "Idle"}
+                {boat.status || "station-keeping"}
               </span>
             </li>
           ))}

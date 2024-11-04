@@ -21,8 +21,8 @@ function ManualControl() {
   const { boats } = useContext(BoatContext); // Use useContext to get boats
 
   const [selectedBoatId, setSelectedBoatId] = useState("all");
-  const [rudderAngle, setRudderAngle] = useState(90);
-  const [sailAngle, setSailAngle] = useState(45);
+  const [rudderAngle, setRudderAngle] = useState(0);
+  const [sailAngle, setSailAngle] = useState(0);
   const [throttle, setThrottle] = useState(0);
   const commandMode = "manual"; // Set command mode to 'manual'
   const [mapCenter, setMapCenter] = useState({
@@ -67,21 +67,21 @@ function ManualControl() {
   }, [rudderAngle, sailAngle, throttle, sendData]);
 
   const handleRudderMove = (event) => {
-    const angle = Math.round(((event.x + 1) / 2) * 180);
+    const angle = Math.round(event.x * 90);
     setRudderAngle(angle);
   };
 
   const handleThrottleMove = (event) => {
-    const throttleValue = Math.round((event.y + 1) * 100 - 100);
+    const throttleValue = Math.round(event.y * 100);
     setThrottle(throttleValue);
   };
 
   const handleRudderStop = () => {
-    setRudderAngle(90);
+    setRudderAngle(0);
   };
 
   const handleThrottleStop = () => {
-    setThrottle(50);
+    setThrottle(0);
   };
 
   const handleSailAngleChange = (e) => {
@@ -177,8 +177,8 @@ function ManualControl() {
           <label>Sail Angle: {sailAngle}°</label>
           <input
             type="range"
-            min="0"
-            max="90"
+            min="-180"
+            max="180"
             value={sailAngle}
             onChange={handleSailAngleChange}
             disabled={!isConnected}

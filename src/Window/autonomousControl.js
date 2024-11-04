@@ -138,6 +138,17 @@ function AutonomousControl() {
     });
   }, [boats]);
 
+  // Auto-hide notification after 2 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 2000); // 2 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
   const handleBoatChange = (event) => {
     setTargetBoatId(event.target.value);
   };
@@ -238,6 +249,12 @@ function AutonomousControl() {
   return (
     <div className="map-container">
       <h2>Autonomous Control</h2>
+
+      {notification && (
+        <div className="notification-popup">
+          <p>{notification.message}</p>
+        </div>
+      )}
 
       {!isConnected && <p className="warning-text">Not connected to server.</p>}
 
@@ -385,14 +402,6 @@ function AutonomousControl() {
           </Marker>
         )}
       </MapContainer>
-
-      {/* Notification for boat reaching destination */}
-      {notification && (
-        <div className="notification">
-          <p>{notification.message}</p>
-          <button onClick={() => setNotification(null)}>Close</button>
-        </div>
-      )}
     </div>
   );
 }
