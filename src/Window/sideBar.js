@@ -23,7 +23,7 @@ function Sidebar({ isSidebarOpen }) {
         </span>
       </p>
       <h3>Online Boats:</h3>
-      {boats.length > 0 ? (
+      {boats && boats.length > 0 ? (
         <ul className="boat-list">
           {boats.map((boat) => (
             <li key={boat.boat_id}>
@@ -34,9 +34,9 @@ function Sidebar({ isSidebarOpen }) {
                 className={`boat-status ${
                   boat.status === "Reached Destination"
                     ? "reached"
-                    : boat.status.startsWith("In Progress")
+                    : boat.status && boat.status.startsWith("In Progress")
                     ? "in-progress"
-                    : "station keeping"
+                    : "station-keeping"
                 }`}
               >
                 {boat.status || "station-keeping"}
