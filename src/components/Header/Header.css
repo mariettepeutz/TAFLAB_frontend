@@ -1,0 +1,181 @@
+/* components/Header/Header.css */
+
+.header {
+  background-color: var(--secondary-color);
+  color: var(--white-color);
+  padding: 10px 20px;
+  position: relative;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.connection-center {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.connection-center select {
+  padding: 5px;
+}
+
+.connection-center button {
+  padding: 5px 10px;
+  background-color: var(--primary-color);
+  border: none;
+  color: var(--white-color);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.connection-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.green {
+  background-color: var(--success-color);
+}
+
+.gray {
+  background-color: var(--gray-color);
+}
+
+.connection-text {
+  display: inline; /* Default display */
+}
+
+/* Theme toggle and hamburger menu */
+.right-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.theme-icon {
+  width: 24px;
+  height: 24px;
+  background-color: transparent;
+}
+
+.theme-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+}
+
+.theme-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--gray-color);
+  transition: 0.4s;
+  border-radius: 20px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: var(--white-color);
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--primary-color);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* Hamburger button styling */
+.hamburger {
+  font-size: 24px;
+  background: none;
+  border: none;
+  color: var(--white-color);
+  cursor: pointer;
+  position: relative;
+  z-index: 2000;
+}
+
+/* Ensure the hamburger menu is always on top */
+.hamburger {
+  position: relative;
+  z-index: 2000;
+}
+
+/* Adjustments for small screens */
+@media (max-width: 768px) {
+  .header-content {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .logo {
+    width: 100%;
+    text-align: center;
+  }
+
+  .connection-center {
+    order: 2;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .right-controls {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hamburger {
+    order: 1;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+  }
+
+  /* Hide connection text on small screens */
+  .connection-text {
+    display: none;
+  }
+}

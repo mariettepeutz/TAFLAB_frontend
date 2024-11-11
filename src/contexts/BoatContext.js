@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from "react";
-import { useSocket } from "./socketContext";
+import { useSocket } from "./SocketContext";
 
 export const BoatContext = createContext();
 

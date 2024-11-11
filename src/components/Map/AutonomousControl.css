@@ -1,0 +1,133 @@
+/* components/Map/AutonomousControl.css */
+
+/* General container styling */
+.autonomous-control-container {
+  padding: 20px;
+}
+
+/* Notification popup */
+.notification-popup {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1abc9c;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  z-index: 2000;
+}
+
+/* Warning text */
+.warning-text {
+  color: #e74c3c;
+}
+
+/* Boat selection dropdown */
+.boat-selection {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.boat-selection label {
+  font-weight: bold;
+}
+
+/* Map container adjustments for responsiveness */
+@media (max-width: 768px) {
+  .autonomous-control-container {
+    padding: 10px;
+  }
+
+  .boat-selection {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .boat-selection select {
+    width: 100%;
+  }
+
+  .leaflet-container {
+    height: 400px !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .leaflet-container {
+    height: 500px !important;
+  }
+}
+
+/* Adjust popup content */
+.leaflet-popup-content {
+  font-size: 14px;
+}
+
+.leaflet-popup-content label {
+  display: block;
+  margin-top: 5px;
+}
+
+.leaflet-popup-content input {
+  width: 100%;
+  padding: 4px;
+  margin-top: 2px;
+  box-sizing: border-box;
+}
+
+.leaflet-popup-content button {
+  margin-top: 10px;
+  padding: 5px 10px;
+  background-color: #3498db;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.leaflet-popup-content button:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.leaflet-popup-content button + button {
+  margin-left: 5px;
+}
+
+/* Map interaction adjustments */
+.leaflet-container {
+  width: 100%;
+  height: 500px;
+}
+
+/* Ensure hamburger menu is always on top */
+.hamburger {
+  position: fixed;
+  top: 10px;
+  right: 20px;
+  z-index: 3000; /* Higher than other elements */
+  font-size: 24px;
+  background: none;
+  border: none;
+  color: var(--white-color);
+  cursor: pointer;
+}
+
+/* Adjust map controls for mobile */
+@media (max-width: 768px) {
+  .hamburger {
+    top: 10px;
+    right: 10px;
+  }
+
+  .leaflet-popup-content {
+    font-size: 12px;
+  }
+
+  .leaflet-container {
+    height: 400px !important;
+  }
+}

@@ -1,11 +1,12 @@
-// src/Window/DataTransfer.js
+// components/DataTransfer/DataTransfer.js
 
 import React, { useState, useContext } from "react";
-import { BoatContext } from "../Context/boatContext";
+import { BoatContext } from "../../contexts/BoatContext";
 import Modal from "react-modal";
-import { FaTimes } from "react-icons/fa"; // Import the close icon
+import { FaTimes } from "react-icons/fa";
+import "./DataTransfer.css";
 
-// Set the app element for accessibility (adjust '#root' if necessary)
+// Set the app element for accessibility
 Modal.setAppElement("#root");
 
 function DataTransfer() {
@@ -36,7 +37,6 @@ function DataTransfer() {
             <div className="boat-card-body">
               <p>Latitude: {boat.lat}</p>
               <p>Longitude: {boat.lng}</p>
-              {/* Add more summary info here if needed */}
             </div>
           </div>
         ))}

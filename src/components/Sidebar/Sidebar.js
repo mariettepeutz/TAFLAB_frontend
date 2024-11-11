@@ -1,13 +1,13 @@
-// Window/sideBar.js
+// components/Sidebar/Sidebar.js
 
 import React from "react";
-import { useSocket } from "../Context/socketContext";
-import { BoatContext } from "../Context/boatContext"; // Import BoatContext
-import "../styles.css";
+import { useSocket } from "../../contexts/SocketContext";
+import { BoatContext } from "../../contexts/BoatContext";
+import "./Sidebar.css";
 
 function Sidebar({ isSidebarOpen }) {
   const { commandMode } = useSocket();
-  const { boats } = React.useContext(BoatContext); // Get boats from context
+  const { boats } = React.useContext(BoatContext);
 
   return (
     <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>

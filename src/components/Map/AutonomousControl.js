@@ -1,4 +1,4 @@
-// Window/autonomousControl.js
+// components/Map/AutonomousControl.js
 
 import React, { useState, useEffect, useContext } from "react";
 import {
@@ -6,14 +6,14 @@ import {
   TileLayer,
   Marker,
   Popup,
-  useMapEvents,
   Polyline,
+  useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { useSocket } from "../Context/socketContext";
-import { BoatContext } from "../Context/boatContext";
-import { v4 as uuidv4 } from "uuid";
+import { useSocket } from "../../contexts/SocketContext";
+import { BoatContext } from "../../contexts/BoatContext";
+import "./AutonomousControl.css";
 
 // Custom boat icon for unselected boats
 const boatIcon = new L.Icon({
@@ -26,9 +26,9 @@ const boatIcon = new L.Icon({
 // Custom boat icon for selected boat (double size)
 const selectedBoatIcon = new L.Icon({
   iconUrl: "boat.png",
-  iconSize: [64, 64], // Double size
-  iconAnchor: [32, 64],
-  popupAnchor: [0, -64],
+  iconSize: [48, 48], // Adjusted size
+  iconAnchor: [24, 48],
+  popupAnchor: [0, -48],
 });
 
 // Custom icon for the selected position
@@ -174,6 +174,7 @@ function AutonomousControl() {
           console.error("Could not copy text: ", err);
         });
     } else {
+      // Fallback for insecure contexts
       const textArea = document.createElement("textarea");
       textArea.value = textToCopy;
       textArea.style.position = "fixed";
@@ -247,7 +248,7 @@ function AutonomousControl() {
   };
 
   return (
-    <div className="map-container">
+    <div className="autonomous-control-container">
       <h2>Autonomous Control</h2>
 
       {notification && (
@@ -258,7 +259,7 @@ function AutonomousControl() {
 
       {!isConnected && <p className="warning-text">Not connected to server.</p>}
 
-      <div style={{ marginBottom: "10px" }}>
+      <div className="boat-selection">
         <label>Select Boat: </label>
         <select value={targetBoatId} onChange={handleBoatChange}>
           {boats.length > 0 ? (
@@ -277,6 +278,9 @@ function AutonomousControl() {
         center={mapCenter}
         zoom={14}
         style={{ width: "100%", height: "500px" }}
+        scrollWheelZoom={false}
+        doubleClickZoom={false}
+        touchZoom={false}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

@@ -1,0 +1,123 @@
+/* components/DataTransfer/DataTransfer.css */
+
+.boat-cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.boat-card {
+  background-color: var(--white-color);
+  border: 1px solid #e0e0e0;
+  width: 250px;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.boat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.boat-card-header {
+  background-color: var(--primary-color);
+  color: var(--white-color);
+  padding: 15px;
+}
+
+.boat-card-header h3 {
+  margin: 0;
+  font-size: 1.25em;
+}
+
+.boat-card-body {
+  padding: 15px;
+}
+
+.boat-card-body p {
+  margin: 0 0 10px 0;
+}
+
+.boat-modal-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.boat-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  max-height: 80vh;
+  transform: translate(-50%, -50%);
+  background: var(--white-color);
+  padding: 30px;
+  max-width: 600px;
+  width: 90%;
+  border-radius: 10px;
+  overflow-y: auto;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.modal-close-button {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.modal-close-button:hover {
+  color: #000;
+}
+
+.boat-details {
+  margin-top: 20px;
+}
+
+.boat-details p {
+  margin-bottom: 10px;
+}
+
+.boat-details p strong {
+  display: inline-block;
+  width: 150px;
+}
+
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.send-to-cloud-button,
+.get-from-cloud-button {
+  flex: 1;
+  padding: 10px 20px;
+  background-color: var(--primary-color);
+  color: var(--white-color);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+.get-from-cloud-button {
+  background-color: var(--success-color);
+}
+
+.send-to-cloud-button:hover {
+  background-color: #0056b3;
+}
+
+.get-from-cloud-button:hover {
+  background-color: #218838;
+}
+
+.button-group button:last-child {
+  margin-right: 0;
+}

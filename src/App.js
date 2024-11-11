@@ -1,12 +1,13 @@
 // App.js
+
 import React, { useState } from "react";
-import ManualControl from "./Window/manualControl";
-import AutonomousControl from "./Window/autonomousControl";
-import DataTransfer from "./Window/dataTransfer";
-import Heatmap from "./Window/heatmap"; // Import Heatmap
-import Header from "./Window/header";
-import Sidebar from "./Window/sideBar";
-import "./styles.css";
+import Header from "./components/Header/Header";
+import Sidebar from "./components/Sidebar/Sidebar";
+import AutonomousControl from "./components/Map/AutonomousControl";
+import ManualControl from "./components/Map/ManualControl";
+import DataTransfer from "./components/DataTransfer/DataTransfer";
+import HeatmapWindow from "./components/Map/HeatmapWindow";
+import "./styles/styles.css";
 
 function App() {
   const [activeTab, setActiveTab] = useState("autonomous");
@@ -22,8 +23,8 @@ function App() {
         return <AutonomousControl />;
       case "data":
         return <DataTransfer />;
-      case "heatmap": // Add Heatmap option here
-        return <Heatmap />;
+      case "heatmap":
+        return <HeatmapWindow />;
       default:
         return <ManualControl />;
     }

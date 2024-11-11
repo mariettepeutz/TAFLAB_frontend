@@ -1,0 +1,29 @@
+/* NotificationBanner.css */
+
+.notification-banner {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background-color: #e74c3c;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+}
+
+.notification-banner p {
+  margin: 0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  margin-left: 20px;
+  cursor: pointer;
+}

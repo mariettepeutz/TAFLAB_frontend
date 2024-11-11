@@ -1,0 +1,45 @@
+/* components/Map/HeatmapWindow.css */
+
+.heatmap-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.data-type-selector {
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.color-scale-legend {
+  position: absolute;
+  z-index: 1000;
+  background: white;
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  user-select: none;
+}
+
+.legend-scale {
+  width: 200px;
+  height: 20px;
+  border: 1px solid black;
+  margin-top: 10px;
+}
+
+.legend-scale.temperature-scale {
+  background: linear-gradient(to right, blue, green, yellow, orange, red);
+}
+
+.legend-scale.chaos-scale {
+  background: linear-gradient(to right, blue, cyan, green, yellow, orange, red);
+}
+
+.legend-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-top: 5px;
+}

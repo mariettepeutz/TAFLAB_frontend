@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, useMap, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "leaflet.heat";
-import { BoatContext } from "../Context/boatContext"; // Import BoatContext
+import { BoatContext } from "../contexts/BoatContext"; // Import BoatContext
 
 const HeatmapWindow = () => {
   const { boats } = useContext(BoatContext); // Get boats data from context
@@ -32,14 +32,10 @@ const HeatmapWindow = () => {
     if (boats.length > 0) {
       // Calculate data for heatmap based on selected dataType
       const data = boats.map((boat) => {
-        const { lat, lng } = boat;
-        let value = 0;
-        if (dataType === "chaos") {
-          value = boat.chaos;
-        } else if (dataType === "temperature") {
-          value = boat.temperature;
-        }
-        return [lat, lng, value]; // Use the selected data value
+        const lat = boat.lat !== undefined ? boat.lat : 0;
+        const lng = boat.lng !== undefined ? boat.lng : 0;
+        let value = dataType === "chaos" ? boat.chaos : boat.temperature;
+        return [lat, lng, value];
       });
       setHeatmapData(data);
     }
@@ -52,8 +48,8 @@ const HeatmapWindow = () => {
     useEffect(() => {
       if (heatmapData.length > 0) {
         const heatLayer = L.heatLayer(heatmapData, {
-          radius: 100,
-          blur: 30,
+          radius: 50,
+          blur: 50,
           maxZoom: 10,
         }).addTo(map);
 
@@ -76,14 +72,13 @@ const HeatmapWindow = () => {
         const windMarkers = [];
 
         // Define a set of interpolation points (grid)
-        const gridSize = 0.005; // Adjust grid size for desired density
-        const latMin = Math.min(...boats.map((b) => b.lat));
-        const latMax = Math.max(...boats.map((b) => b.lat));
-        const lngMin = Math.min(...boats.map((b) => b.lng));
-        const lngMax = Math.max(...boats.map((b) => b.lng));
+        const gridSize = 0.005;
+        const latMin = Math.min(...boats.map((b) => b.lat || 0));
+        const latMax = Math.max(...boats.map((b) => b.lat || 0));
+        const lngMin = Math.min(...boats.map((b) => b.lng || 0));
+        const lngMax = Math.max(...boats.map((b) => b.lng || 0));
 
         const interpolationPoints = [];
-
         for (let lat = latMin; lat <= latMax; lat += gridSize) {
           for (let lng = lngMin; lng <= lngMax; lng += gridSize) {
             interpolationPoints.push({ lat, lng });
@@ -100,10 +95,10 @@ const HeatmapWindow = () => {
             const distance = Math.sqrt(
               (boat.lat - point.lat) ** 2 + (boat.lng - point.lng) ** 2
             );
-            const weight = 1 / (distance + 0.0001); // Avoid division by zero
+            const weight = 1 / (distance + 0.0001);
 
-            const u = boat["u-wind"]; // u-wind component
-            const v = boat["v-wind"]; // v-wind component
+            const u = boat["u-wind"] || 0;
+            const v = boat["v-wind"] || 0;
 
             sumU += u * weight;
             sumV += v * weight;
@@ -116,7 +111,6 @@ const HeatmapWindow = () => {
           const magnitude = Math.sqrt(avgU ** 2 + avgV ** 2);
           const angle = (Math.atan2(avgV, avgU) * 180) / Math.PI;
 
-          // Scale the arrow size for better visibility
           const arrowIcon = L.divIcon({
             html: `<div style="transform: rotate(${angle}deg); font-size: ${
               6 + magnitude * 3
@@ -145,30 +139,20 @@ const HeatmapWindow = () => {
     return (
       <>
         {boats.map((boat) => {
-          if (
-            boat &&
-            typeof boat.lat === "number" &&
-            typeof boat.lng === "number"
-          ) {
-            return (
-              <Marker
-                key={boat.boat_id}
-                position={[boat.lat, boat.lng]}
-                icon={boatIcon}
-              >
-                <Popup>
-                  <b>{boat.boat_id}</b>
-                  <br />
-                  Latitude: {boat.lat.toFixed(6)}
-                  <br />
-                  Longitude: {boat.lng.toFixed(6)}
-                </Popup>
-              </Marker>
-            );
-          } else {
-            console.warn(`Boat ${boat.boat_id} has no valid location data.`);
-            return null; // Don't render a marker if location is invalid
-          }
+          const lat = boat.lat !== undefined ? boat.lat : 0;
+          const lng = boat.lng !== undefined ? boat.lng : 0;
+
+          return (
+            <Marker key={boat.boat_id} position={[lat, lng]} icon={boatIcon}>
+              <Popup>
+                <b>{boat.boat_id}</b>
+                <br />
+                Latitude: {lat.toFixed(6)}
+                <br />
+                Longitude: {lng.toFixed(6)}
+              </Popup>
+            </Marker>
+          );
         })}
       </>
     );
@@ -176,7 +160,6 @@ const HeatmapWindow = () => {
 
   // Fix Leaflet's icon issue with Webpack
   delete L.Icon.Default.prototype._getIconUrl;
-
   L.Icon.Default.mergeOptions({
     iconRetinaUrl:
       "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
@@ -198,8 +181,8 @@ const HeatmapWindow = () => {
         const mapRect = mapContainer.getBoundingClientRect();
         const legendRect = legendRef.current.getBoundingClientRect();
 
-        const x = mapRect.right - legendRect.width - 20; // 20px from right edge
-        const y = mapRect.bottom - legendRect.height - 20; // 20px from bottom edge
+        const x = mapRect.right - legendRect.width - 20;
+        const y = mapRect.bottom - legendRect.height - 20;
 
         setLegendPosition({ x, y });
       }
@@ -210,11 +193,10 @@ const HeatmapWindow = () => {
       dragStartPos.current = { x: e.clientX, y: e.clientY };
       legendStartPos.current = { x: legendPosition.x, y: legendPosition.y };
 
-      // Add event listeners to document
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
 
-      e.preventDefault(); // Prevent text selection
+      e.preventDefault();
     };
 
     const handleMouseMove = (e) => {
@@ -225,32 +207,24 @@ const HeatmapWindow = () => {
         let newX = legendStartPos.current.x + dx;
         let newY = legendStartPos.current.y + dy;
 
-        // Get map container dimensions
         const mapContainer = document.querySelector(".leaflet-container");
         const mapRect = mapContainer.getBoundingClientRect();
         const legendRect = legendRef.current.getBoundingClientRect();
 
-        // Constrain newX and newY within map bounds
         const minX = mapRect.left;
         const maxX = mapRect.right - legendRect.width;
         const minY = mapRect.top;
         const maxY = mapRect.bottom - legendRect.height;
 
-        // Ensure the legend stays within the map boundaries
         newX = Math.max(minX, Math.min(newX, maxX));
         newY = Math.max(minY, Math.min(newY, maxY));
 
-        setLegendPosition({
-          x: newX,
-          y: newY,
-        });
+        setLegendPosition({ x: newX, y: newY });
       }
     };
 
     const handleMouseUp = () => {
       isDragging.current = false;
-
-      // Remove event listeners
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };

@@ -1,0 +1,95 @@
+/* Global Styling Adjustments for Responsiveness */
+body,
+.map-container,
+.heatmap-container {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+.logo h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.theme-toggle,
+.connection-center,
+.right-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Mobile-Specific Adjustments */
+@media (max-width: 768px) {
+  /* Stack header elements vertically */
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .theme-toggle,
+  .connection-center,
+  .right-controls {
+    justify-content: center;
+  }
+
+  /* Adjust map container height on smaller screens */
+  .map-container,
+  .heatmap-container {
+    height: 400px;
+  }
+
+  /* Flexbox adjustments for boat selection cards */
+  .boat-selection-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  /* Adjust joystick and control section layout */
+  .controls-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Legend adjustments */
+  .color-scale-legend {
+    width: 150px;
+    padding: 8px;
+  }
+}
+
+/* Desktop-Specific Adjustments */
+@media (min-width: 769px) {
+  .map-container,
+  .heatmap-container {
+    height: 600px;
+  }
+
+  .controls-section {
+    display: flex;
+    justify-content: space-around;
+  }
+
+  .boat-selection-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .color-scale-legend {
+    width: 200px;
+  }
+}
