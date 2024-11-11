@@ -1,4 +1,3 @@
-// Context/boatContext.js
 import React, { createContext, useState, useEffect } from "react";
 import { useSocket } from "./socketContext";
 

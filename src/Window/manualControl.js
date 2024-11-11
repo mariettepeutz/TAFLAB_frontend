@@ -1,7 +1,7 @@
 // Window/manualControl.js
 
 import React, { useState, useEffect, useCallback, useContext } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { Joystick } from "react-joystick-component";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -40,11 +40,13 @@ function ManualControl() {
   const sendData = useCallback(() => {
     if (isConnected && socket) {
       const data = {
-        boat_name: selectedBoatId,
-        rudder_angle: rudderAngle,
-        sail_angle: sailAngle,
-        throttle,
+        boat_id: selectedBoatId,
+        r: rudderAngle, // Abbreviated keys
+        s: sailAngle,
+        th: throttle,
         command_mode: commandMode,
+        target_gps_latitude: 0, // Include default values
+        target_gps_longitude: 0,
       };
 
       socket.emit("gui_data", data);
@@ -94,8 +96,11 @@ function ManualControl() {
 
     const boat = boats.find((b) => b.boat_id === selectedValue);
     setMapCenter(
-      boat
-        ? { lat: boat.lat, lng: boat.lng } // Update to use boat.lat and boat.lng
+      boat && boat.location
+        ? {
+            lat: boat.location.latitude || 37.8682,
+            lng: boat.location.longitude || -122.3177,
+          }
         : { lat: 37.8682, lng: -122.3177 }
     );
   };
@@ -104,21 +109,22 @@ function ManualControl() {
     return boats.map((boat) => {
       if (
         boat &&
-        typeof boat.lat === "number" &&
-        typeof boat.lng === "number"
+        boat.location &&
+        typeof boat.location.latitude === "number" &&
+        typeof boat.location.longitude === "number"
       ) {
         return (
           <Marker
             key={boat.boat_id}
-            position={[boat.lat, boat.lng]} // Use boat.lat and boat.lng
+            position={[boat.location.latitude, boat.location.longitude]}
             icon={boatIcon}
           >
             <Popup>
               <b>{boat.boat_id}</b>
               <br />
-              Latitude: {boat.lat.toFixed(6)}
+              Latitude: {boat.location.latitude.toFixed(6)}
               <br />
-              Longitude: {boat.lng.toFixed(6)}
+              Longitude: {boat.location.longitude.toFixed(6)}
             </Popup>
           </Marker>
         );
