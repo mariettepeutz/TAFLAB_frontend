@@ -72,6 +72,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  position: relative;
+  left: -50px; /* Move 50px to the left */
 }
 
 .theme-icon {
@@ -123,59 +125,4 @@ input:checked + .slider {
 
 input:checked + .slider:before {
   transform: translateX(20px);
-}
-
-/* Hamburger button styling */
-.hamburger {
-  font-size: 24px;
-  background: none;
-  border: none;
-  color: var(--white-color);
-  cursor: pointer;
-  position: relative;
-  z-index: 2000;
-}
-
-/* Ensure the hamburger menu is always on top */
-.hamburger {
-  position: relative;
-  z-index: 2000;
-}
-
-/* Adjustments for small screens */
-@media (max-width: 768px) {
-  .header-content {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-  }
-
-  .logo {
-    width: 100%;
-    text-align: center;
-  }
-
-  .connection-center {
-    order: 2;
-    width: 100%;
-    justify-content: center;
-  }
-
-  .right-controls {
-    order: 3;
-    width: 100%;
-    justify-content: center;
-  }
-
-  .hamburger {
-    order: 1;
-    position: absolute;
-    top: 10px;
-    right: 20px;
-  }
-
-  /* Hide connection text on small screens */
-  .connection-text {
-    display: none;
-  }
 }

@@ -62,12 +62,10 @@ function Header({ toggleSidebar }) {
   return (
     <header className="header">
       <div className="header-content">
-        {/* Logo */}
         <div className="logo">
           <h1>TAFLAB</h1>
         </div>
 
-        {/* Centered Connection Controls */}
         <div className="connection-center">
           <select value={selectedServer} onChange={handleServerChange}>
             {servers.map((server) => (
@@ -83,14 +81,12 @@ function Header({ toggleSidebar }) {
             <div
               className={`connection-light ${isConnected ? "green" : "gray"}`}
             ></div>
-            {/* Hide the status text on small screens */}
             <span className="connection-text">
               {isConnected ? "Connected" : "Disconnected"}
             </span>
           </div>
         </div>
 
-        {/* Theme Toggle and Hamburger Menu */}
         <div className="right-controls">
           <div className="theme-toggle">
             <img
