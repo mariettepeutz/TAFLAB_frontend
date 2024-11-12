@@ -15,7 +15,6 @@ import { useSocket } from "../../contexts/SocketContext";
 import { BoatContext } from "../../contexts/BoatContext";
 import "./AutonomousControl.css";
 
-// Custom boat icon for unselected boats
 const boatIcon = new L.Icon({
   iconUrl: "boat.png",
   iconSize: [32, 32],
@@ -23,15 +22,13 @@ const boatIcon = new L.Icon({
   popupAnchor: [0, -32],
 });
 
-// Custom boat icon for selected boat (double size)
 const selectedBoatIcon = new L.Icon({
   iconUrl: "boat.png",
-  iconSize: [48, 48], // Adjusted size
+  iconSize: [48, 48],
   iconAnchor: [24, 48],
   popupAnchor: [0, -48],
 });
 
-// Custom icon for the selected position
 const selectedIcon = new L.Icon({
   iconUrl: "target-location.png",
   iconSize: [32, 32],
@@ -39,7 +36,6 @@ const selectedIcon = new L.Icon({
   popupAnchor: [0, -32],
 });
 
-// Assign different colors to boats
 const boatColors = {};
 const getBoatColor = (boatId) => {
   if (!boatColors[boatId]) {
@@ -54,7 +50,7 @@ function AutonomousControl() {
   const { boats } = useContext(BoatContext);
 
   const [targetBoatId, setTargetBoatId] = useState("");
-  const [boat, setBoat] = useState(null);
+  const [boat, setBoat] = useState("Boat1");
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [copiedPosition, setCopiedPosition] = useState(null);
   const [mapCenter, setMapCenter] = useState([37.866942, -122.315452]);
@@ -63,14 +59,12 @@ function AutonomousControl() {
   const [boatStatuses, setBoatStatuses] = useState({});
   const [notification, setNotification] = useState(null);
 
-  // Set command mode to 'autonomous'
   useEffect(() => {
     if (setCommandMode) {
       setCommandMode("autonomous");
     }
   }, [setCommandMode]);
 
-  // Update the selected boat when the targetBoatId changes
   useEffect(() => {
     const targetBoat = boats.find((b) => b.boat_id === targetBoatId);
     setBoat(targetBoat);
@@ -87,30 +81,26 @@ function AutonomousControl() {
     }
   }, [boats, targetBoatId]);
 
-  // Set default boat ID if none is selected
   useEffect(() => {
     if (!targetBoatId && boats.length > 0) {
       setTargetBoatId(boats[0].boat_id);
     }
   }, [boats, targetBoatId]);
 
-  // Update boat trails and statuses
   useEffect(() => {
     const newBoatTrails = { ...boatTrails };
     const newBoatStatuses = { ...boatStatuses };
 
     boats.forEach((b) => {
       if (b && typeof b.lat === "number" && typeof b.lng === "number") {
-        // Update trails
         if (!newBoatTrails[b.boat_id]) {
           newBoatTrails[b.boat_id] = [];
         }
         newBoatTrails[b.boat_id].push([b.lat, b.lng]);
         if (newBoatTrails[b.boat_id].length > 50) {
-          newBoatTrails[b.boat_id].shift(); // Limit trail length
+          newBoatTrails[b.boat_id].shift();
         }
 
-        // Update statuses
         if (b.status) {
           newBoatStatuses[b.boat_id] = b.status;
         }
@@ -121,7 +111,6 @@ function AutonomousControl() {
     setBoatStatuses(newBoatStatuses);
   }, [boats]);
 
-  // Handle notifications when boat reaches target
   useEffect(() => {
     boats.forEach((b) => {
       if (
@@ -138,12 +127,11 @@ function AutonomousControl() {
     });
   }, [boats]);
 
-  // Auto-hide notification after 2 seconds
   useEffect(() => {
     if (notification) {
       const timer = setTimeout(() => {
         setNotification(null);
-      }, 2000); // 2 seconds
+      }, 2000);
 
       return () => clearTimeout(timer);
     }
@@ -174,7 +162,6 @@ function AutonomousControl() {
           console.error("Could not copy text: ", err);
         });
     } else {
-      // Fallback for insecure contexts
       const textArea = document.createElement("textarea");
       textArea.value = textToCopy;
       textArea.style.position = "fixed";
@@ -190,29 +177,13 @@ function AutonomousControl() {
     }
   };
 
-  const sendTargetCoordinatesForBoat = (boatId) => {
-    const target = boatTargets[boatId];
-    if (socket && isConnected && target && target.lat && target.lng) {
-      const data = {
-        boat_name: boatId,
-        command_mode: "autonomous",
-        target_gps_latitude: parseFloat(target.lat.toFixed(6)),
-        target_gps_longitude: parseFloat(target.lng.toFixed(6)),
-      };
-      socket.emit("gui_data", data);
-      console.log("Sent target coordinates for boat:", data);
-    } else {
-      console.warn("Socket is not connected or target position not specified.");
-    }
-  };
-
   const sendRouteToCurrentBoat = () => {
     if (socket && isConnected && targetBoatId && selectedPosition) {
       const data = {
-        boat_name: targetBoatId,
-        command_mode: "autonomous",
-        target_gps_latitude: selectedPosition.lat,
-        target_gps_longitude: selectedPosition.lng,
+        id: targetBoatId,
+        md: "auto",
+        tlat: selectedPosition.lat,
+        tlng: selectedPosition.lng,
       };
       socket.emit("gui_data", data);
       console.log("Sent route to current boat:", data);
@@ -360,7 +331,7 @@ function AutonomousControl() {
                       Paste
                     </button>
                     <button
-                      onClick={() => sendTargetCoordinatesForBoat(b.boat_id)}
+                      onClick={sendRouteToCurrentBoat}
                       disabled={!isConnected}
                     >
                       Send Target Coordinates
@@ -375,7 +346,6 @@ function AutonomousControl() {
           }
         })}
 
-        {/* Render boat trails */}
         {Object.keys(boatTrails).map((boatId) => (
           <Polyline
             key={boatId}

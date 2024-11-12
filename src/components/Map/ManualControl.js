@@ -1,11 +1,10 @@
 // components/Map/ManualControl.js
 
-import React, { useState, useEffect, useCallback, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import { Joystick } from "react-joystick-component";
 import "./ManualControl.css";
 import { useSocket } from "../../contexts/SocketContext";
 import { BoatContext } from "../../contexts/BoatContext";
-import { throttle } from "lodash";
 
 function ManualControl() {
   const { socket, isConnected, setCommandMode } = useSocket();
@@ -14,92 +13,96 @@ function ManualControl() {
   const [selectedBoatId, setSelectedBoatId] = useState("");
   const [rudderAngle, setRudderAngle] = useState(0);
   const [throttleValue, setThrottleValue] = useState(0);
-  const commandMode = "manual";
 
-  // Automatically select the first boat if no boat is selected
+  const rudderAngleRef = useRef(rudderAngle);
+  const throttleValueRef = useRef(throttleValue);
+  const intervalId = useRef(null);
+  const commandMode = "mnl";
+
+  const intervalTime = "500"; //2hz interval
+
   useEffect(() => {
     if (!selectedBoatId && boats.length > 0) {
       setSelectedBoatId(boats[0].boat_id);
     }
   }, [boats, selectedBoatId]);
 
-  // Set command mode to 'manual' when this component mounts
   useEffect(() => {
     if (setCommandMode) {
-      setCommandMode("manual");
+      setCommandMode("mnl");
     }
   }, [setCommandMode]);
 
-  const sendData = useCallback(
-    throttle(() => {
-      if (isConnected && socket) {
+  const startSendingData = () => {
+    if (!intervalId.current && isConnected && socket) {
+      intervalId.current = setInterval(() => {
         const data = {
-          boat_id: selectedBoatId,
-          r: rudderAngle,
-          th: throttleValue,
-          command_mode: commandMode,
+          id: selectedBoatId,
+          md: commandMode,
+          r: rudderAngleRef.current,
+          th: throttleValueRef.current,
         };
-
         socket.emit("gui_data", data);
-        console.log("Sent data:", data);
-      } else {
-        console.warn("Socket is not connected.");
-      }
-    }, 100),
-    [
-      isConnected,
-      socket,
-      rudderAngle,
-      throttleValue,
-      commandMode,
-      selectedBoatId,
-    ]
-  );
+        console.log("Sent latest data:", data);
+      }, intervalTime); // Send data every 1 second
+    }
+  };
 
-  useEffect(() => {
-    sendData();
-  }, [rudderAngle, throttleValue, sendData]);
+  const stopSendingData = () => {
+    if (intervalId.current) {
+      clearInterval(intervalId.current);
+      intervalId.current = null;
+    }
+  };
 
   const handleJoystickMove = (event) => {
-    const newRudderAngle = Math.round(event.x * 90); // Horizontal for rudder angle
-    const newThrottleValue = Math.round(event.y * 100); // Vertical for throttle (ESC)
+    const newRudderAngle = Math.round(event.x * 90);
+    const newThrottleValue = Math.round(event.y * 100);
+
     setRudderAngle(newRudderAngle);
     setThrottleValue(newThrottleValue);
+
+    // Update refs to ensure interval sends latest values
+    rudderAngleRef.current = newRudderAngle;
+    throttleValueRef.current = newThrottleValue;
+
+    startSendingData();
   };
 
   const handleJoystickStop = () => {
     setRudderAngle(0);
     setThrottleValue(0);
+    rudderAngleRef.current = 0;
+    throttleValueRef.current = 0;
+    stopSendingData();
   };
 
-  const handleBoatSelect = (boat) => {
-    setSelectedBoatId(boat.boat_id);
-  };
+  useEffect(() => {
+    return () => stopSendingData(); // Cleanup interval on unmount
+  }, []);
 
   return (
     <div className="manual-control-container">
-      <h2>Manual Control</h2>
-
-      {!isConnected && <p className="warning-text">Not connected to server.</p>}
-
-      {/* Boat Selection */}
-      <div className="boat-selection">
-        <label>Select Boat: </label>
-        <select
-          value={selectedBoatId}
-          onChange={(e) => setSelectedBoatId(e.target.value)}
-        >
-          {boats.length > 0 ? (
-            boats.map((boat) => (
-              <option key={boat.boat_id} value={boat.boat_id}>
-                {boat.boat_id}
-              </option>
-            ))
-          ) : (
-            <option>No boats available</option>
-          )}
-        </select>
-      </div>
+      <header className="control-header">
+        <h2>Manual Control</h2>
+        <div className="boat-selection">
+          <label>Select Boat:</label>
+          <select
+            value={selectedBoatId}
+            onChange={(e) => setSelectedBoatId(e.target.value)}
+          >
+            {boats.length > 0 ? (
+              boats.map((boat) => (
+                <option key={boat.boat_id} value={boat.boat_id}>
+                  {boat.boat_id}
+                </option>
+              ))
+            ) : (
+              <option>No boats available</option>
+            )}
+          </select>
+        </div>
+      </header>
 
       <div className="controls-section">
         <div className="joystick-container">

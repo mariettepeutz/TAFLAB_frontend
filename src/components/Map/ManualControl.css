@@ -1,20 +1,30 @@
 /* components/Map/ManualControl.css */
 
 .manual-control-container {
-  padding: 20px;
-  color: var(--text-color);
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: space-between;
+  height: 100vh; /* Make the container fit the full viewport height */
+  padding: 20px;
+  box-sizing: border-box;
+  color: var(--text-color);
 }
 
-.warning-text {
-  color: var(--warning-color);
-  margin-bottom: 20px;
+.control-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.control-header h2 {
+  margin: 0;
+  font-size: 24px;
 }
 
 .boat-selection {
-  margin-bottom: 20px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -33,6 +43,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 20px;
+  flex-grow: 1;
+  justify-content: center;
 }
 
 .joystick-container {
@@ -47,9 +60,12 @@
 }
 
 @media (min-width: 768px) {
+  .manual-control-container {
+    padding: 40px;
+  }
+
   .controls-section {
     flex-direction: row;
-    justify-content: center;
-    gap: 20px;
+    gap: 40px;
   }
 }
