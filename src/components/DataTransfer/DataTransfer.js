@@ -23,27 +23,25 @@ function DataTransfer() {
 
   const closeModal = () => {
     setSelectedBoat(null);
-    setIsRecording(false);
-    setRecordedData([]);
   };
 
   useEffect(() => {
     if (socket && selectedBoat) {
       const handleBoatData = (data) => {
-        // Check if the data is for the selected boat
         if (data.boat_id === selectedBoat.boat_id) {
-          // Update the selected boat's data
+          const time_now = new Date().toISOString();
+
           setSelectedBoat((prevBoat) => ({
             ...prevBoat,
             data: {
               ...prevBoat.data,
               ...data.data,
+              time_now,
             },
           }));
 
-          // If recording is active, collect the data
           if (isRecording) {
-            setRecordedData((prevData) => [...prevData, data]);
+            setRecordedData((prevData) => [...prevData, { ...data, time_now }]);
           }
         }
       };
@@ -56,18 +54,20 @@ function DataTransfer() {
     }
   }, [socket, selectedBoat, isRecording]);
 
-  // Detect when recording stops or boat disconnects
   useEffect(() => {
     if (!isRecording && recordedData.length > 0) {
-      // Save data to file
       saveDataToFile();
-      // Clear recorded data
       setRecordedData([]);
     }
   }, [isRecording]);
 
   const saveDataToFile = () => {
-    const fileType = "json"; // Change to 'csv' if you prefer CSV
+    const fileType = "json";
+
+    // Use the last known boat ID if `selectedBoat` is null
+    const boatId = selectedBoat
+      ? selectedBoat.boat_id
+      : recordedData[0]?.boat_id;
 
     if (fileType === "json") {
       const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
@@ -76,7 +76,7 @@ function DataTransfer() {
       const link = document.createElement("a");
       link.href = jsonString;
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      link.download = `boat_data_${selectedBoat.boat_id}_${timestamp}.json`;
+      link.download = `boat_data_${boatId}_${timestamp}.json`;
 
       link.click();
     } else if (fileType === "csv") {
@@ -87,20 +87,30 @@ function DataTransfer() {
       const link = document.createElement("a");
       link.href = csvData;
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      link.download = `boat_data_${selectedBoat.boat_id}_${timestamp}.csv`;
+      link.download = `boat_data_${boatId}_${timestamp}.csv`;
 
       link.click();
     }
   };
 
-  // Helper function to convert JSON to CSV
   const convertToCSV = (data) => {
     if (data.length === 0) return "";
 
-    const keys = Object.keys(data[0].data);
+    const flattenData = data.map((entry) => {
+      const flatData = { boat_id: entry.boat_id, ...entry.data };
+      if (flatData.magnetic_field) {
+        flatData.magnetic_field_x = flatData.magnetic_field.x;
+        flatData.magnetic_field_y = flatData.magnetic_field.y;
+        flatData.magnetic_field_z = flatData.magnetic_field.z;
+        delete flatData.magnetic_field;
+      }
+      return flatData;
+    });
+
+    const keys = Object.keys(flattenData[0]);
     const header = keys.join(",");
-    const rows = data.map((entry) =>
-      keys.map((key) => entry.data[key]).join(",")
+    const rows = flattenData.map((entry) =>
+      keys.map((key) => entry[key]).join(",")
     );
 
     return [header, ...rows].join("\n");
@@ -124,8 +134,14 @@ function DataTransfer() {
               <h3>{boat.boat_id}</h3>
             </div>
             <div className="boat-card-body">
-              <p>Latitude: {boat.location.latitude}</p>
-              <p>Longitude: {boat.location.longitude}</p>
+              <p>
+                Latitude:{" "}
+                {boat.data && boat.data.latitude ? boat.data.latitude : "N/A"}
+              </p>
+              <p>
+                Longitude:{" "}
+                {boat.data && boat.data.longitude ? boat.data.longitude : "N/A"}
+              </p>
             </div>
           </div>
         ))}
@@ -145,20 +161,47 @@ function DataTransfer() {
           <h2>{selectedBoat.boat_id} Details</h2>
           <div className="boat-details">
             <h3>Boat Info:</h3>
-            {Object.entries(selectedBoat)
-              .filter(([key]) => key !== "data")
-              .map(([key, value]) => (
-                <p key={key}>
-                  <strong>{key}:</strong> {JSON.stringify(value)}
-                </p>
-              ))}
+            <p>
+              <strong>Boat ID:</strong> {selectedBoat.boat_id}
+            </p>
+            {selectedBoat.status && (
+              <p>
+                <strong>Status:</strong> {selectedBoat.status}
+              </p>
+            )}
+            {selectedBoat.last_seen && (
+              <p>
+                <strong>Last Seen:</strong>{" "}
+                {new Date(selectedBoat.last_seen * 1000).toLocaleString()}
+              </p>
+            )}
+            {selectedBoat.notification && (
+              <p>
+                <strong>Notification:</strong> {selectedBoat.notification}
+              </p>
+            )}
             {selectedBoat.data && (
               <>
                 <h3>Data:</h3>
                 {Object.entries(selectedBoat.data).map(([key, value]) => (
-                  <p key={key}>
-                    <strong>{key}:</strong> {JSON.stringify(value)}
-                  </p>
+                  <div key={key}>
+                    {typeof value === "object" && value !== null ? (
+                      <>
+                        <strong>{key}:</strong>
+                        <div style={{ marginLeft: "20px" }}>
+                          {Object.entries(value).map(([subKey, subValue]) => (
+                            <p key={subKey}>
+                              <strong>{subKey}:</strong> {subValue}
+                            </p>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <p>
+                        <strong>{key}:</strong> {value}
+                      </p>
+                    )}
+                  </div>
                 ))}
               </>
             )}
@@ -192,6 +235,19 @@ function DataTransfer() {
             </button>
           </div>
         </Modal>
+      )}
+      {isRecording && (
+        <button
+          className="record-button"
+          onClick={handleRecordButtonClick}
+          style={{
+            backgroundColor: "red",
+            color: "white",
+            marginTop: "20px",
+          }}
+        >
+          Stop Recording
+        </button>
       )}
     </div>
   );
