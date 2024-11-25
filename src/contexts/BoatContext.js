@@ -1,42 +1,66 @@
-import React, { createContext, useState, useEffect } from "react";
+// contexts/BoatContext.js
+
+import React, { createContext, useState, useEffect, useCallback } from "react";
 import { useSocket } from "./SocketContext";
 
 export const BoatContext = createContext();
 
 export const BoatProvider = ({ children }) => {
   const [boats, setBoats] = useState([]);
-  const { socket, isConnected } = useSocket();
+  const { socket } = useSocket();
+
+  const handleBoatData = useCallback(
+    (data) => {
+      const time_now = new Date().toISOString();
+
+      setBoats((prevBoats) => {
+        const existingBoatIndex = prevBoats.findIndex(
+          (boat) => boat.boat_id === data.boat_id
+        );
+
+        if (existingBoatIndex !== -1) {
+          // Update existing boat
+          const updatedBoats = [...prevBoats];
+          updatedBoats[existingBoatIndex] = {
+            ...updatedBoats[existingBoatIndex],
+            data: {
+              ...updatedBoats[existingBoatIndex].data,
+              ...data.data,
+              time_now,
+            },
+          };
+          return updatedBoats;
+        } else {
+          // Add new boat
+          return [
+            ...prevBoats,
+            {
+              boat_id: data.boat_id,
+              data: {
+                ...data.data,
+                time_now,
+              },
+            },
+          ];
+        }
+      });
+    },
+    [setBoats]
+  );
 
   useEffect(() => {
-    if (socket && isConnected) {
-      console.log("Socket is connected, setting up boat data listeners.");
-
-      const handleBoatLocations = (data) => {
-        console.log("Received boat locations:", data);
-        setBoats(data);
-      };
-
-      // Listen for 'boat_locations' event from the backend
-      socket.on("boat_locations", handleBoatLocations);
-
-      // Request the list of active boats from the backend
-      socket.emit("request_boat_list");
+    if (socket) {
+      socket.on("boat_data", handleBoatData);
 
       return () => {
-        socket.off("boat_locations", handleBoatLocations);
+        socket.off("boat_data", handleBoatData);
       };
-    } else {
-      console.log("Socket is not connected.");
     }
-  }, [socket, isConnected]);
-
-  useEffect(() => {
-    if (!isConnected) {
-      setBoats([]); // Clear boats when disconnected
-    }
-  }, [isConnected]);
+  }, [socket, handleBoatData]);
 
   return (
-    <BoatContext.Provider value={{ boats }}>{children}</BoatContext.Provider>
+    <BoatContext.Provider value={{ boats, setBoats }}>
+      {children}
+    </BoatContext.Provider>
   );
 };

@@ -5,6 +5,8 @@ import ReactDOM from "react-dom";
 import App from "./App";
 import { BoatProvider } from "./contexts/BoatContext";
 import { SocketProvider } from "./contexts/SocketContext";
+import { RecordingProvider } from "./contexts/RecordingContext";
+
 import { ThemeProvider } from "./contexts/ThemeContext";
 
 ReactDOM.render(
@@ -12,7 +14,9 @@ ReactDOM.render(
     <ThemeProvider>
       <SocketProvider>
         <BoatProvider>
-          <App />
+          <RecordingProvider>
+            <App />
+          </RecordingProvider>
         </BoatProvider>
       </SocketProvider>
     </ThemeProvider>

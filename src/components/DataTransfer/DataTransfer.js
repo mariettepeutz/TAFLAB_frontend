@@ -1,147 +1,152 @@
-// components/DataTransfer/DataTransfer.js
-
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useCallback } from "react";
 import { BoatContext } from "../../contexts/BoatContext";
 import { useSocket } from "../../contexts/SocketContext";
+import { useRecording } from "../../contexts/RecordingContext";
 import Modal from "react-modal";
 import { FaTimes } from "react-icons/fa";
 import "./DataTransfer.css";
 
-// Set the app element for accessibility
 Modal.setAppElement("#root");
 
 function DataTransfer() {
-  const { boats } = useContext(BoatContext);
-  const [selectedBoat, setSelectedBoat] = useState(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordedData, setRecordedData] = useState([]);
+  const { boats, setBoats } = useContext(BoatContext);
+  const [selectedBoatId, setSelectedBoatId] = useState(null);
   const { socket } = useSocket();
 
-  const openModal = (boat) => {
-    setSelectedBoat(boat);
-  };
+  // Use the RecordingContext
+  const {
+    isRecordingAll,
+    startRecordingAll,
+    stopRecordingAll,
+    recordingBoats,
+    startRecordingBoat,
+    stopRecordingBoat,
+    addRecordedData,
+  } = useRecording();
 
-  const closeModal = () => {
-    setSelectedBoat(null);
-  };
+  // Memoize handleBoatData to prevent issues with event listeners
+  const handleBoatData = useCallback(
+    (data) => {
+      // Update boats data
+      setBoats((prevBoats) => {
+        const existingBoatIndex = prevBoats.findIndex(
+          (boat) => boat.boat_id === data.boat_id
+        );
+
+        if (existingBoatIndex !== -1) {
+          // Update existing boat
+          const updatedBoats = [...prevBoats];
+          updatedBoats[existingBoatIndex] = {
+            ...updatedBoats[existingBoatIndex],
+            data: {
+              ...updatedBoats[existingBoatIndex].data,
+              ...data.data,
+            },
+          };
+          return updatedBoats;
+        } else {
+          // Add new boat
+          return [
+            ...prevBoats,
+            {
+              boat_id: data.boat_id,
+              data: {
+                ...data.data,
+              },
+            },
+          ];
+        }
+      });
+
+      // Add data to recording context
+      addRecordedData({ ...data });
+    },
+    [setBoats, addRecordedData]
+  );
 
   useEffect(() => {
-    if (socket && selectedBoat) {
-      const handleBoatData = (data) => {
-        if (data.boat_id === selectedBoat.boat_id) {
-          const time_now = new Date().toISOString();
-
-          setSelectedBoat((prevBoat) => ({
-            ...prevBoat,
-            data: {
-              ...prevBoat.data,
-              ...data.data,
-              time_now,
-            },
-          }));
-
-          if (isRecording) {
-            setRecordedData((prevData) => [...prevData, { ...data, time_now }]);
-          }
-        }
-      };
-
+    if (socket) {
       socket.on("boat_data", handleBoatData);
 
       return () => {
         socket.off("boat_data", handleBoatData);
       };
     }
-  }, [socket, selectedBoat, isRecording]);
+  }, [socket, handleBoatData]);
 
-  useEffect(() => {
-    if (!isRecording && recordedData.length > 0) {
-      saveDataToFile();
-      setRecordedData([]);
-    }
-  }, [isRecording]);
+  const openModal = (boatId) => {
+    setSelectedBoatId(boatId);
+  };
 
-  const saveDataToFile = () => {
-    const fileType = "json";
+  const closeModal = () => {
+    setSelectedBoatId(null);
+  };
 
-    // Use the last known boat ID if `selectedBoat` is null
-    const boatId = selectedBoat
-      ? selectedBoat.boat_id
-      : recordedData[0]?.boat_id;
-
-    if (fileType === "json") {
-      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-        JSON.stringify(recordedData, null, 2)
-      )}`;
-      const link = document.createElement("a");
-      link.href = jsonString;
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      link.download = `boat_data_${boatId}_${timestamp}.json`;
-
-      link.click();
-    } else if (fileType === "csv") {
-      const csvString = convertToCSV(recordedData);
-      const csvData = `data:text/csv;charset=utf-8,${encodeURIComponent(
-        csvString
-      )}`;
-      const link = document.createElement("a");
-      link.href = csvData;
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      link.download = `boat_data_${boatId}_${timestamp}.csv`;
-
-      link.click();
+  const handleRecordAllButtonClick = () => {
+    if (isRecordingAll) {
+      stopRecordingAll();
+    } else {
+      startRecordingAll();
     }
   };
 
-  const convertToCSV = (data) => {
-    if (data.length === 0) return "";
-
-    const flattenData = data.map((entry) => {
-      const flatData = { boat_id: entry.boat_id, ...entry.data };
-      if (flatData.magnetic_field) {
-        flatData.magnetic_field_x = flatData.magnetic_field.x;
-        flatData.magnetic_field_y = flatData.magnetic_field.y;
-        flatData.magnetic_field_z = flatData.magnetic_field.z;
-        delete flatData.magnetic_field;
-      }
-      return flatData;
-    });
-
-    const keys = Object.keys(flattenData[0]);
-    const header = keys.join(",");
-    const rows = flattenData.map((entry) =>
-      keys.map((key) => entry[key]).join(",")
-    );
-
-    return [header, ...rows].join("\n");
+  const handleRecordBoatButtonClick = (boatId) => {
+    if (recordingBoats[boatId]) {
+      stopRecordingBoat(boatId);
+    } else {
+      startRecordingBoat(boatId);
+    }
   };
 
-  const handleRecordButtonClick = () => {
-    setIsRecording((prev) => !prev);
-  };
+  // Get the selected boat data from the boats array
+  const selectedBoat = boats.find((boat) => boat.boat_id === selectedBoatId);
 
   return (
     <div>
       <h2>Data Transfer</h2>
+      <div className="button-group">
+        <button
+          className="record-button"
+          onClick={handleRecordAllButtonClick}
+          style={{
+            backgroundColor: isRecordingAll ? "red" : "green",
+            color: "white",
+          }}
+        >
+          {isRecordingAll ? "Stop Recording All" : "Start Recording All"}
+        </button>
+      </div>
       <div className="boat-cards-container">
         {boats.map((boat) => (
-          <div
-            key={boat.boat_id}
-            className="boat-card"
-            onClick={() => openModal(boat)}
-          >
+          <div key={boat.boat_id} className="boat-card">
             <div className="boat-card-header">
               <h3>{boat.boat_id}</h3>
             </div>
             <div className="boat-card-body">
-              <p>
-                Latitude:{" "}
-                {boat.data && boat.data.latitude ? boat.data.latitude : "N/A"}
-              </p>
-              <p>
-                Longitude:{" "}
-                {boat.data && boat.data.longitude ? boat.data.longitude : "N/A"}
-              </p>
+              <p>Latitude: {boat.data?.latitude || "N/A"}</p>
+              <p>Longitude: {boat.data?.longitude || "N/A"}</p>
+            </div>
+            <div className="boat-card-footer">
+              <button
+                className="record-button"
+                onClick={() => handleRecordBoatButtonClick(boat.boat_id)}
+                style={{
+                  backgroundColor: recordingBoats[boat.boat_id]
+                    ? "red"
+                    : "green",
+                  color: "white",
+                }}
+              >
+                {recordingBoats[boat.boat_id]
+                  ? "Stop Recording"
+                  : "Start Recording"}
+              </button>
+              <button
+                className="details-button"
+                onClick={() => openModal(boat.boat_id)}
+              >
+                Details
+              </button>
             </div>
           </div>
         ))}
@@ -149,7 +154,7 @@ function DataTransfer() {
 
       {selectedBoat && (
         <Modal
-          isOpen={!!selectedBoat}
+          isOpen={!!selectedBoatId}
           onRequestClose={closeModal}
           contentLabel="Boat Details"
           className="boat-modal"
@@ -209,13 +214,17 @@ function DataTransfer() {
           <div className="button-group">
             <button
               className="record-button"
-              onClick={handleRecordButtonClick}
+              onClick={() => handleRecordBoatButtonClick(selectedBoat.boat_id)}
               style={{
-                backgroundColor: isRecording ? "red" : "green",
+                backgroundColor: recordingBoats[selectedBoat.boat_id]
+                  ? "red"
+                  : "green",
                 color: "white",
               }}
             >
-              {isRecording ? "Stop Recording" : "Start Recording"}
+              {recordingBoats[selectedBoat.boat_id]
+                ? "Stop Recording"
+                : "Start Recording"}
             </button>
             <button
               className="send-to-cloud-button"
@@ -233,21 +242,11 @@ function DataTransfer() {
             >
               Get from Cloud
             </button>
+            <button className="export-csv-button" onClick={() => {}}>
+              Export to CSV
+            </button>
           </div>
         </Modal>
-      )}
-      {isRecording && (
-        <button
-          className="record-button"
-          onClick={handleRecordButtonClick}
-          style={{
-            backgroundColor: "red",
-            color: "white",
-            marginTop: "20px",
-          }}
-        >
-          Stop Recording
-        </button>
       )}
     </div>
   );
