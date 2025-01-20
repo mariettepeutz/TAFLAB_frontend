@@ -57,7 +57,7 @@ function ManualControl() {
   };
 
   const handleRudderJoystickMove = (event) => {
-    const newRudderAngle = Math.round(event.x * 90);
+    const newRudderAngle = Math.round(event.x * 90 + 90);
 
     setRudderAngle(newRudderAngle);
     rudderAngleRef.current = newRudderAngle;
@@ -66,7 +66,7 @@ function ManualControl() {
   };
 
   const handleSailJoystickMove = (event) => {
-    const newSailAngle = Math.round(event.x * 90);
+    const newSailAngle = Math.round(event.x * 90 + 90);
 
     setSailAngle(newSailAngle);
     sailAngleRef.current = newSailAngle;
