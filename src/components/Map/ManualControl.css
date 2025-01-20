@@ -118,3 +118,16 @@
   cursor: pointer;
   color: #333;
 }
+
+.vertical-slider {
+  -webkit-appearance: slider-vertical;
+  width: 20px;
+  height: 150px;
+  margin: 10px;
+}
+
+.slider-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

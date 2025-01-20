@@ -10,12 +10,12 @@ function ManualControl() {
 
   const [selectedBoatId, setSelectedBoatId] = useState("");
   const [rudderAngle, setRudderAngle] = useState(0);
-  const [throttleValue, setThrottleValue] = useState(0);
   const [sailAngle, setSailAngle] = useState(0);
+  const [throttleValue, setThrottleValue] = useState(50);
 
   const rudderAngleRef = useRef(rudderAngle);
-  const throttleValueRef = useRef(throttleValue);
   const sailAngleRef = useRef(sailAngle);
+  const throttleValueRef = useRef(throttleValue);
 
   const intervalId = useRef(null);
   const commandMode = "mnl";
@@ -56,15 +56,11 @@ function ManualControl() {
     }
   };
 
-  const handleJoystickMove = (event) => {
+  const handleRudderJoystickMove = (event) => {
     const newRudderAngle = Math.round(event.x * 90);
-    const newThrottleValue = Math.round(event.y * 100);
 
     setRudderAngle(newRudderAngle);
-    setThrottleValue(newThrottleValue);
-
     rudderAngleRef.current = newRudderAngle;
-    throttleValueRef.current = newThrottleValue;
 
     startSendingData();
   };
@@ -78,30 +74,28 @@ function ManualControl() {
     startSendingData();
   };
 
+  const handleThrottleChange = (event) => {
+    const newThrottleValue = parseInt(event.target.value, 10);
+
+    setThrottleValue(newThrottleValue);
+    throttleValueRef.current = newThrottleValue;
+
+    startSendingData();
+  };
+
   const handleJoystickStop = () => {
-    setRudderAngle(0);
-    setThrottleValue(0);
-    setSailAngle(0);
-
-    rudderAngleRef.current = 0;
-    throttleValueRef.current = 0;
-    sailAngleRef.current = 0;
-
     stopSendingData();
 
     if (socket && isConnected) {
       const zeroData = {
         id: selectedBoatId,
         md: commandMode,
-        r: 0,
-        th: 0,
-        s: 0,
+        r: rudderAngle,
+        th: throttleValue,
+        s: sailAngle,
       };
       socket.emit("gui_data", zeroData);
-      console.log(
-        "Sent stop command with 0 values for all actuators:",
-        zeroData
-      );
+      console.log("Sent stop command with current values:", zeroData);
     }
   };
 
@@ -133,20 +127,19 @@ function ManualControl() {
       </header>
 
       <div className="controls-section">
-        {/* Joystick for rudder and throttle */}
+        {/* Joystick for rudder */}
         <div className="joystick-container">
-          <h3>Rudder & Throttle</h3>
+          <h3>Rudder</h3>
           <Joystick
             size={150}
             baseColor="#ccc"
             stickColor="#555"
-            move={handleJoystickMove}
+            move={handleRudderJoystickMove}
             stop={handleJoystickStop}
             disabled={!isConnected}
           />
           <div className="joystick-values">
             <p>Rudder Angle: {rudderAngle}°</p>
-            <p>Throttle: {throttleValue}%</p>
           </div>
         </div>
 
@@ -163,6 +156,23 @@ function ManualControl() {
           />
           <div className="joystick-values">
             <p>Sail Angle: {sailAngle}°</p>
+          </div>
+        </div>
+
+        {/* Vertical throttle slider */}
+        <div className="slider-container">
+          <h3>Throttle</h3>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={throttleValue}
+            onChange={handleThrottleChange}
+            className="vertical-slider"
+            style={{ writingMode: "bt-lr" }}
+          />
+          <div className="slider-values">
+            <p>Throttle: {throttleValue}%</p>
           </div>
         </div>
       </div>
