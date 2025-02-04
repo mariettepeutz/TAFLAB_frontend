@@ -61,7 +61,7 @@ export function RecordingProvider({ children }) {
   const saveDataToFileAll = () => {
     if (recordedDataAll.length === 0) return;
 
-    const fileType = "json"; // Change to "csv" if needed
+    const fileType = "csv"; // Change to "csv" if needed
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 
     if (fileType === "json") {
@@ -88,7 +88,7 @@ export function RecordingProvider({ children }) {
     const data = recordedDataBoats[boatId];
     if (!data || data.length === 0) return;
 
-    const fileType = "json"; // Change to "csv" if needed
+    const fileType = "csv"; // Change to "csv" if needed
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 
     if (fileType === "json") {
