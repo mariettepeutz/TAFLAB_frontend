@@ -4,21 +4,31 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "leaflet.heat";
-import boatsData from "/Users/dustinteng/Desktop/berkeley/Capstone/boatpi/frontend/src/components/Map/large data set.json"; // local JSON file
+import Papa from "papaparse";
 import "./HeatmapWindow.css";
 
-const HeatmapWindow = () => {
-  // Choose which measurement to show: either "temperature" or "chaos" (which in this example
-  // represents wind velocity).
-  const [dataType, setDataType] = useState("temperature");
-  // This state will hold our heatmap data in the form of an array of [lat, lng, value].
-  const [heatmapData, setHeatmapData] = useState([]);
-  // This state holds the filtered snapshots (one per boat) based on the selected time.
-  const [filteredBoats, setFilteredBoats] = useState([]);
+// List of CSV files available in your public folder.
+const csvFiles = [
+  "simulation_data.csv",
+  // Add more CSV filenames (e.g., "other_data.csv") if needed.
+];
 
-  // For the time slider, we store the currently selected time and the overall range.
+const HeatmapWindow = () => {
+  // Measurement type selector: "temperature" or "chaos" (used here for wind velocity).
+  const [dataType, setDataType] = useState("temperature");
+  // Store CSV data (each row is an object with keys matching the CSV headers).
+  const [boatsData, setBoatsData] = useState([]);
+  // Heatmap data: array of [lat, lng, value].
+  const [heatmapData, setHeatmapData] = useState([]);
+  // Filtered snapshots (one per boat) based on the selected time.
+  const [filteredBoats, setFilteredBoats] = useState([]);
+  // Time slider: current selected time and overall range.
   const [selectedTime, setSelectedTime] = useState(null);
   const [timeRange, setTimeRange] = useState({ min: null, max: null });
+  // State for the selected CSV file.
+  const [selectedFile, setSelectedFile] = useState(csvFiles[0]);
+  // New state: show or hide boat markers (boat logo).
+  const [showBoatMarkers, setShowBoatMarkers] = useState(true);
 
   // For dragging the legend.
   const legendRef = useRef(null);
@@ -35,29 +45,54 @@ const HeatmapWindow = () => {
     popupAnchor: [0, -32],
   });
 
-  // Determine the overall time range from the local JSON file.
+  // Fetch and parse the selected CSV file.
+  useEffect(() => {
+    // Note: Make sure the CSV file is in the public folder.
+    fetch(selectedFile)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text();
+      })
+      .then((csvText) => {
+        const parsed = Papa.parse(csvText, {
+          header: true,
+          dynamicTyping: true,
+          skipEmptyLines: true,
+        });
+        console.log("Parsed CSV Data from", selectedFile, parsed.data);
+        setBoatsData(parsed.data);
+      })
+      .catch((error) => console.error("Error loading CSV:", error));
+  }, [selectedFile]);
+
+  // Determine the overall time range from the CSV data.
   useEffect(() => {
     if (boatsData && boatsData.length > 0) {
-      const times = boatsData.map((b) => new Date(b.time_now).getTime());
-      const minTime = Math.min(...times);
-      const maxTime = Math.max(...times);
-      setTimeRange({ min: minTime, max: maxTime });
-      // Default the slider to the latest timestamp.
-      if (!selectedTime) {
-        setSelectedTime(maxTime);
+      const times = boatsData
+        .filter((row) => row.time_now)
+        .map((b) => new Date(b.time_now).getTime());
+      if (times.length > 0) {
+        const minTime = Math.min(...times);
+        const maxTime = Math.max(...times);
+        console.log("Time Range:", { min: minTime, max: maxTime });
+        setTimeRange({ min: minTime, max: maxTime });
+        if (selectedTime === null) {
+          setSelectedTime(maxTime);
+        }
       }
     }
-  }, [selectedTime]);
+  }, [boatsData, selectedTime]);
 
-  // Filter the snapshots to display only the latest snapshot for each boat
-  // at or before the selected time.
+  // Filter the snapshots to display the latest snapshot per boat (at or before selected time)
+  // and build the heatmap data.
   useEffect(() => {
     if (boatsData && selectedTime !== null) {
       const latestSnapshots = {};
       boatsData.forEach((b) => {
         const snapshotTime = new Date(b.time_now).getTime();
         if (snapshotTime <= selectedTime) {
-          // For each boat, keep the most recent snapshot (if any).
           if (
             !latestSnapshots[b.boat_id] ||
             new Date(latestSnapshots[b.boat_id].time_now).getTime() <
@@ -68,21 +103,23 @@ const HeatmapWindow = () => {
         }
       });
       const filteredArray = Object.values(latestSnapshots);
+      console.log("Filtered Boats:", filteredArray);
       setFilteredBoats(filteredArray);
 
-      // Build heatmap data: [latitude, longitude, value].
+      // Build heatmap data: [latitude, longitude, value]
       const heatData = filteredArray.map((b) => {
-        const lat = b.data.latitude ?? 0;
-        const lng = b.data.longitude ?? 0;
+        const lat = parseFloat(b.latitude) || 0;
+        const lng = parseFloat(b.longitude) || 0;
         const value =
           dataType === "temperature"
-            ? b.data.temperature ?? 0
-            : b.data.wind_velocity ?? 0;
+            ? parseFloat(b.temperature) || 0
+            : parseFloat(b.wind_velocity) || 0;
         return [lat, lng, value];
       });
+      console.log("Heatmap Data:", heatData);
       setHeatmapData(heatData);
     }
-  }, [selectedTime, dataType]);
+  }, [boatsData, selectedTime, dataType]);
 
   // HeatmapLayer attaches a Leaflet heatmap layer to the map.
   const HeatmapLayer = () => {
@@ -94,7 +131,6 @@ const HeatmapWindow = () => {
           blur: 50,
           maxZoom: 10,
         }).addTo(map);
-        // Cleanup when the data changes or component unmounts.
         return () => {
           map.removeLayer(heatLayer);
         };
@@ -108,8 +144,8 @@ const HeatmapWindow = () => {
     return (
       <>
         {filteredBoats.map((b) => {
-          const lat = b.data.latitude ?? 0;
-          const lng = b.data.longitude ?? 0;
+          const lat = parseFloat(b.latitude) || 0;
+          const lng = parseFloat(b.longitude) || 0;
           return (
             <Marker
               key={`${b.boat_id}-${b.time_now}`}
@@ -126,8 +162,8 @@ const HeatmapWindow = () => {
                 Time: {new Date(b.time_now).toLocaleString()}
                 <br />
                 {dataType === "temperature"
-                  ? `Temperature: ${b.data.temperature}`
-                  : `Wind Velocity: ${b.data.wind_velocity}`}
+                  ? `Temperature: ${b.temperature}`
+                  : `Wind Velocity: ${b.wind_velocity}`}
               </Popup>
             </Marker>
           );
@@ -136,7 +172,7 @@ const HeatmapWindow = () => {
     );
   };
 
-  // Fix Leaflet's default icon paths (this is helpful when bundling with Webpack).
+  // Fix Leaflet's default icon paths.
   delete L.Icon.Default.prototype._getIconUrl;
   L.Icon.Default.mergeOptions({
     iconRetinaUrl:
@@ -147,7 +183,7 @@ const HeatmapWindow = () => {
       "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
   });
 
-  // ColorScaleLegend shows a draggable legend for the heatmap.
+  // ColorScaleLegend provides a draggable legend for the heatmap.
   const ColorScaleLegend = () => {
     useEffect(() => {
       if (
@@ -178,22 +214,17 @@ const HeatmapWindow = () => {
       if (isDragging.current) {
         const dx = e.clientX - dragStartPos.current.x;
         const dy = e.clientY - dragStartPos.current.y;
-
         let newX = legendStartPos.current.x + dx;
         let newY = legendStartPos.current.y + dy;
-
         const mapContainer = document.querySelector(".leaflet-container");
         const mapRect = mapContainer.getBoundingClientRect();
         const legendRect = legendRef.current.getBoundingClientRect();
-
         const minX = mapRect.left;
         const maxX = mapRect.right - legendRect.width;
         const minY = mapRect.top;
         const maxY = mapRect.bottom - legendRect.height;
-
         newX = Math.max(minX, Math.min(newX, maxX));
         newY = Math.max(minY, Math.min(newY, maxY));
-
         setLegendPosition({ x: newX, y: newY });
       }
     };
@@ -230,14 +261,39 @@ const HeatmapWindow = () => {
     );
   };
 
-  // Handle changes to the data type drop-down.
+  // Handler for measurement type changes.
   const handleDataTypeChange = (e) => {
     setDataType(e.target.value);
+  };
+
+  // Handler for CSV file selection.
+  const handleFileChange = (e) => {
+    setSelectedFile(e.target.value);
+    // Reset time and data when a new file is selected.
+    setSelectedTime(null);
+    setTimeRange({ min: null, max: null });
+    setBoatsData([]);
+  };
+
+  // Handler for toggling the boat markers (boat logo) on or off.
+  const toggleBoatMarkers = () => {
+    setShowBoatMarkers(!showBoatMarkers);
   };
 
   return (
     <div className="heatmap-container">
       <div className="controls">
+        {/* File Selector Dropdown */}
+        <div className="file-selector">
+          <label>Select CSV File: </label>
+          <select value={selectedFile} onChange={handleFileChange}>
+            {csvFiles.map((file) => (
+              <option key={file} value={file}>
+                {file}
+              </option>
+            ))}
+          </select>
+        </div>
         {/* Data Type Selector */}
         <div className="data-type-selector">
           <label>Select Data Type: </label>
@@ -247,7 +303,7 @@ const HeatmapWindow = () => {
           </select>
         </div>
         {/* Time Slider */}
-        {timeRange.min && timeRange.max && (
+        {timeRange.min !== null && timeRange.max !== null && (
           <div className="time-slider-container">
             <label>
               Time:{" "}
@@ -265,6 +321,12 @@ const HeatmapWindow = () => {
             />
           </div>
         )}
+        {/* Toggle Boat Markers Button */}
+        <div className="boat-toggle">
+          <button onClick={toggleBoatMarkers}>
+            {showBoatMarkers ? "Hide Boat Logo" : "Show Boat Logo"}
+          </button>
+        </div>
       </div>
 
       <MapContainer
@@ -282,7 +344,8 @@ const HeatmapWindow = () => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <HeatmapLayer />
-        <BoatMarkers />
+        {/* Conditionally render BoatMarkers based on showBoatMarkers */}
+        {showBoatMarkers && <BoatMarkers />}
       </MapContainer>
       <ColorScaleLegend />
     </div>
