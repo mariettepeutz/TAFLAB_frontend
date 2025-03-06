@@ -10,8 +10,8 @@ function ManualControl() {
 
   const [selectedBoatId, setSelectedBoatId] = useState("");
   const [rudderAngle, setRudderAngle] = useState(0);
-  const [sailAngle, setSailAngle] = useState(0);
-  const [throttleValue, setThrottleValue] = useState(50);
+  const [sailAngle, setSailAngle] = useState(90);
+  const [throttleValue, setThrottleValue] = useState(0);
 
   const rudderAngleRef = useRef(rudderAngle);
   const sailAngleRef = useRef(sailAngle);
@@ -57,7 +57,7 @@ function ManualControl() {
   };
 
   const handleRudderJoystickMove = (event) => {
-    const newRudderAngle = Math.round(event.x * 90 + 90);
+    const newRudderAngle = Math.round(event.x * 90);
 
     setRudderAngle(newRudderAngle);
     rudderAngleRef.current = newRudderAngle;
@@ -83,19 +83,42 @@ function ManualControl() {
     startSendingData();
   };
 
-  const handleJoystickStop = () => {
+  // Separate stop handlers for rudder and sail may be clearer
+  const handleRudderJoystickStop = () => {
+    // Reset rudder angle to center (90)
+    setRudderAngle(0);
+    rudderAngleRef.current = 0;
     stopSendingData();
 
     if (socket && isConnected) {
-      const zeroData = {
+      const data = {
+        id: selectedBoatId,
+        md: commandMode,
+        r: 0,
+        th: throttleValue,
+        s: sailAngle,
+      };
+      socket.emit("gui_data", data);
+      console.log("Sent reset rudder data:", data);
+    }
+  };
+
+  const handleSailJoystickStop = () => {
+    // Reset sail angle to center (90)
+    setSailAngle(90);
+    sailAngleRef.current = 90;
+    stopSendingData();
+
+    if (socket && isConnected) {
+      const data = {
         id: selectedBoatId,
         md: commandMode,
         r: rudderAngle,
         th: throttleValue,
-        s: sailAngle,
+        s: 90,
       };
-      socket.emit("gui_data", zeroData);
-      console.log("Sent stop command with current values:", zeroData);
+      socket.emit("gui_data", data);
+      console.log("Sent reset sail data:", data);
     }
   };
 
@@ -135,7 +158,7 @@ function ManualControl() {
             baseColor="#ccc"
             stickColor="#555"
             move={handleRudderJoystickMove}
-            stop={handleJoystickStop}
+            stop={handleRudderJoystickStop}
             disabled={!isConnected}
           />
           <div className="joystick-values">
@@ -151,7 +174,7 @@ function ManualControl() {
             baseColor="#ccc"
             stickColor="#555"
             move={handleSailJoystickMove}
-            stop={handleJoystickStop}
+            stop={handleSailJoystickStop}
             disabled={!isConnected}
           />
           <div className="joystick-values">
