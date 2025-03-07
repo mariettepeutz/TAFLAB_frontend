@@ -6,18 +6,19 @@ import L from "leaflet";
 import "leaflet.heat";
 import Papa from "papaparse";
 import "./HeatmapWindow.css";
+import axios from "axios"; 
+import config from "../../config.json"; 
 
-// List of CSV files available in your public folder.
-const csvFiles = [
-  "simulation_data.csv",
-  // Add more CSV filenames (e.g., "other_data.csv") if needed.
-];
+
 
 const HeatmapWindow = () => {
   // Measurement type selector: "temperature" or "chaos" (used here for wind velocity).
   const [dataType, setDataType] = useState("temperature");
   // Store CSV data (each row is an object with keys matching the CSV headers).
   const [boatsData, setBoatsData] = useState([]);
+  const [tables, setTables] = useState([]); // Store available tables
+  const [selectedTable, setSelectedTable] = useState(""); // Currently selected table
+
   // Heatmap data: array of [lat, lng, value].
   const [heatmapData, setHeatmapData] = useState([]);
   // Filtered snapshots (one per boat) based on the selected time.
@@ -25,8 +26,7 @@ const HeatmapWindow = () => {
   // Time slider: current selected time and overall range.
   const [selectedTime, setSelectedTime] = useState(null);
   const [timeRange, setTimeRange] = useState({ min: null, max: null });
-  // State for the selected CSV file.
-  const [selectedFile, setSelectedFile] = useState(csvFiles[0]);
+ 
   // New state: show or hide boat markers (boat logo).
   const [showBoatMarkers, setShowBoatMarkers] = useState(true);
 
@@ -45,82 +45,56 @@ const HeatmapWindow = () => {
     popupAnchor: [0, -32],
   });
 
-  // Fetch and parse the selected CSV file.
-  useEffect(() => {
-    // Note: Make sure the CSV file is in the public folder.
-    fetch(selectedFile)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.text();
-      })
-      .then((csvText) => {
-        const parsed = Papa.parse(csvText, {
-          header: true,
-          dynamicTyping: true,
-          skipEmptyLines: true,
-        });
-        console.log("Parsed CSV Data from", selectedFile, parsed.data);
-        setBoatsData(parsed.data);
-      })
-      .catch((error) => console.error("Error loading CSV:", error));
-  }, [selectedFile]);
-
-  // Determine the overall time range from the CSV data.
-  useEffect(() => {
-    if (boatsData && boatsData.length > 0) {
-      const times = boatsData
-        .filter((row) => row.time_now)
-        .map((b) => new Date(b.time_now).getTime());
-      if (times.length > 0) {
-        const minTime = Math.min(...times);
-        const maxTime = Math.max(...times);
-        console.log("Time Range:", { min: minTime, max: maxTime });
-        setTimeRange({ min: minTime, max: maxTime });
-        if (selectedTime === null) {
-          setSelectedTime(maxTime);
-        }
+// Fetch available tables when the component loads
+useEffect(() => {
+  const fetchTables = async () => {
+    try {
+      const response = await axios.get(`http://localhost:5001/get_boat_data/"${selectedTable}"`);
+      console.log("Available tables:", response.data);
+      
+      if (response.data.length > 0) {
+        setTables(response.data);
+        setSelectedTable(response.data[response.data.length - 1]); // Select latest table by default
       }
+    } catch (error) {
+      console.error("Error fetching table list:", error);
     }
-  }, [boatsData, selectedTime]);
+  };
 
-  // Filter the snapshots to display the latest snapshot per boat (at or before selected time)
-  // and build the heatmap data.
+  fetchTables();
+}, []); // Runs once when the component mounts
+
+// Fetch boat data when a table is selected
+useEffect(() => {
+  if (!selectedTable) return; // Don't run if no table is selected
+
+  const fetchBoatData = async () => {
+    try {
+      const response = await axios.get(`http://localhost:5001/table/"${selectedTable}"`);
+      console.log(`Fetched data for ${selectedTable}:`, response.data);
+      setBoatsData(response.data);
+    } catch (error) {
+      console.error(`Error fetching boat data for table ${selectedTable}:`, error);
+    }
+  };
+
+  fetchBoatData();
+}, [selectedTable]); // Runs whenever selectedTable changes
+
+  // New: use latest table data for heatmap
   useEffect(() => {
-    if (boatsData && selectedTime !== null) {
-      const latestSnapshots = {};
-      boatsData.forEach((b) => {
-        const snapshotTime = new Date(b.time_now).getTime();
-        if (snapshotTime <= selectedTime) {
-          if (
-            !latestSnapshots[b.boat_id] ||
-            new Date(latestSnapshots[b.boat_id].time_now).getTime() <
-              snapshotTime
-          ) {
-            latestSnapshots[b.boat_id] = b;
-          }
-        }
-      });
-      const filteredArray = Object.values(latestSnapshots);
-      console.log("Filtered Boats:", filteredArray);
-      setFilteredBoats(filteredArray);
-
-      // Build heatmap data: [latitude, longitude, value]
-      const heatData = filteredArray.map((b) => {
-        const lat = parseFloat(b.latitude) || 0;
-        const lng = parseFloat(b.longitude) || 0;
-        const value =
-          dataType === "temperature"
-            ? parseFloat(b.temperature) || 0
-            : parseFloat(b.wind_velocity) || 0;
-        return [lat, lng, value];
-      });
-      console.log("Heatmap Data:", heatData);
-      setHeatmapData(heatData);
-    }
-  }, [boatsData, selectedTime, dataType]);
-
+    if (!boatsData || boatsData.length === 0) return;
+  
+    const heatData = boatsData.map((b) => [
+      parseFloat(b.latitude) || 0,
+      parseFloat(b.longitude) || 0,
+      dataType === "temperature" ? parseFloat(b.temperature) || 0 : parseFloat(b.wind_velocity) || 0
+    ]);
+  
+    console.log("Heatmap Data:", heatData);
+    setHeatmapData(heatData);
+  }, [boatsData, dataType]);
+  
   // HeatmapLayer attaches a Leaflet heatmap layer to the map.
   const HeatmapLayer = () => {
     const map = useMap();
@@ -266,14 +240,6 @@ const HeatmapWindow = () => {
     setDataType(e.target.value);
   };
 
-  // Handler for CSV file selection.
-  const handleFileChange = (e) => {
-    setSelectedFile(e.target.value);
-    // Reset time and data when a new file is selected.
-    setSelectedTime(null);
-    setTimeRange({ min: null, max: null });
-    setBoatsData([]);
-  };
 
   // Handler for toggling the boat markers (boat logo) on or off.
   const toggleBoatMarkers = () => {
@@ -283,17 +249,6 @@ const HeatmapWindow = () => {
   return (
     <div className="heatmap-container">
       <div className="controls">
-        {/* File Selector Dropdown */}
-        <div className="file-selector">
-          <label>Select CSV File: </label>
-          <select value={selectedFile} onChange={handleFileChange}>
-            {csvFiles.map((file) => (
-              <option key={file} value={file}>
-                {file}
-              </option>
-            ))}
-          </select>
-        </div>
         {/* Data Type Selector */}
         <div className="data-type-selector">
           <label>Select Data Type: </label>
@@ -302,6 +257,18 @@ const HeatmapWindow = () => {
             <option value="chaos">Wind Velocity</option>
           </select>
         </div>
+        {/* Table (Timestamp) Selector */}
+        <div className="table-selector">
+          <label>Select Time: </label>
+          <select value={selectedTable} onChange={(e) => setSelectedTable(e.target.value)}>
+            {tables.map((table) => (
+              <option key={table} value={table}>
+                {table}
+              </option>
+            ))}
+            </select>
+          </div>
+
         {/* Time Slider */}
         {timeRange.min !== null && timeRange.max !== null && (
           <div className="time-slider-container">

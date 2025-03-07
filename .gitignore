@@ -8,6 +8,9 @@
 # testing
 /coverage
 
+# config with ip
+config.json
+
 # production
 /build
 

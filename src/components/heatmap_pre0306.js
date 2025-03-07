@@ -6,9 +6,12 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "leaflet.heat";
 import { BoatContext } from "../contexts/BoatContext"; // Import BoatContext
+import axios from "axios"; // New: Import axios for API requests
+import config from "../config.json"; // Import the config file
 
 const HeatmapWindow = () => {
-  const { boats } = useContext(BoatContext); // Get boats data from context
+  //const { boats } = useContext(BoatContext); // Get boats data from context
+  const [boats, setBoats] = useState([]); // New: State to store fetched boat data
   const [heatmapData, setHeatmapData] = useState([]);
   const [dataType, setDataType] = useState("temperature"); // 'chaos' or 'temperature'
 
@@ -27,19 +30,23 @@ const HeatmapWindow = () => {
     iconAnchor: [16, 32],
     popupAnchor: [0, -32],
   });
-
+  // New: useEffect from 
   useEffect(() => {
-    if (boats.length > 0) {
-      // Calculate data for heatmap based on selected dataType
-      const data = boats.map((boat) => {
-        const lat = boat.lat !== undefined ? boat.lat : 0;
-        const lng = boat.lng !== undefined ? boat.lng : 0;
-        let value = dataType === "chaos" ? boat.chaos : boat.temperature;
-        return [lat, lng, value];
-      });
-      setHeatmapData(data);
-    }
-  }, [boats, dataType]);
+    const fetchBoatsData = async () => {
+      try {
+        const response = await axios.get(`http://${config.SERVER_IP}:3337/get_boat_data`);
+        const filteredData = response.data.filter(
+          (boat) => boat.lat !== 0 && boat.lng !== 0 && !isNaN(boat.lat) && !isNaN(boat.lng)
+        );
+        setBoats(filteredData);
+      } catch (error) {
+        console.error("Error fetching boat data:", error);
+      }
+    };
+  
+    fetchBoatsData();
+  }, []);
+  
 
   // Heatmap Layer Component
   const HeatmapLayer = () => {
@@ -134,29 +141,34 @@ const HeatmapWindow = () => {
     return null;
   };
 
-  // Boat Markers Component
+  // New: changed Boat Markers Component
   const BoatMarkers = () => {
     return (
       <>
         {boats.map((boat) => {
-          const lat = boat.lat !== undefined ? boat.lat : 0;
-          const lng = boat.lng !== undefined ? boat.lng : 0;
-
-          return (
-            <Marker key={boat.boat_id} position={[lat, lng]} icon={boatIcon}>
-              <Popup>
-                <b>{boat.boat_id}</b>
-                <br />
-                Latitude: {lat.toFixed(6)}
-                <br />
-                Longitude: {lng.toFixed(6)}
-              </Popup>
-            </Marker>
-          );
+          if (boat.lat && boat.lng) {
+            return (
+              <Marker key={boat.boat_id} position={[boat.lat, boat.lng]} icon={boatIcon}>
+                <Popup>
+                  <b>{boat.boat_id}</b>
+                  <br />
+                  Latitude: {boat.lat.toFixed(6)}
+                  <br />
+                  Longitude: {boat.lng.toFixed(6)}
+                  <br />
+                  Temperature: {boat.temperature} °C
+                  <br />
+                  Wind Speed: {boat.wind_speed} m/s
+                </Popup>
+              </Marker>
+            );
+          }
+          return null;
         })}
       </>
     );
   };
+  
 
   // Fix Leaflet's icon issue with Webpack
   delete L.Icon.Default.prototype._getIconUrl;
@@ -247,7 +259,7 @@ const HeatmapWindow = () => {
         onMouseDown={handleMouseDown}
       >
         <strong>
-          {dataType === "chaos" ? "Chaos Intensity" : "Temperature"}
+          {dataType === "chaos" ? "xxxx Intensity" : "Temperature"}
         </strong>
         <div
           style={{
